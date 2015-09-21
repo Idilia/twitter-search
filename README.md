@@ -33,6 +33,7 @@ The project also uses the Idilia Java SDK. This project is also on GitHub is is 
 ### Server Implementation
 
 The code is organized as:
+
 Package | Description
 ------- | -----------
 com.idilia.samples.ts | Single class Application used to start the application
