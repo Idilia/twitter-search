@@ -1,0 +1,34 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml"
+ xmlns:th="http://www.thymeleaf.org">
+<body>
+
+ <div th:fragment="content">
+
+  <!--/* 
+    This is the HTML fragment that is put in search-container when we have
+    the expression and the sense tagging information.
+    It takes from the model the objects:
+      userSearch - instance of UserSearch containing the expression
+      tm - Instance of TaggingMenuResponse containing tm.text and tm.menu
+   */-->
+
+  <!--/* Include a search area for restarting */-->
+  <div th:replace="search/searchBox :: content"></div>
+
+  <!--/* And the sense menu for sense selection of the expression */-->
+  <div id="query-senses">
+   <div id="search-words" th:utext="${tm.text}">Word</div>
+   <br />
+   <div id="search-menus" th:utext="${tm.menu}">Menus</div>
+   <p><small>Click on a card above to change the sense of a word.</small></p>
+   <form th:action="@{/searchSenses}" id="senses-form">
+    <button class="btn btn-primary" type="submit">Search</button>
+   </form>
+   <hr/>
+  </div>
+
+ </div>
+
+</body>
+</html>

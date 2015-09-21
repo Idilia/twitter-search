@@ -1,0 +1,7 @@
+/.classpath
+/.project
+/target
+/.settings
+/src/main/resources/static/lib
+/node
+/node_modules

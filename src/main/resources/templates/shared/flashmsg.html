@@ -1,0 +1,13 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" xmlns:th="http://www.thymeleaf.org">
+<head>
+<title>Insert title here</title>
+</head>
+<body>
+ <div th:fragment="content">
+  <div class="flashmsg">
+   <div th:if="${flashMsg ne null}" class="alert alert-info" th:text="${flashMsg}">The flash message</div>
+  </div>
+ </div>
+</body>
+</html>

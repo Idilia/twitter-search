@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+
+<html xmlns="http://www.w3.org/1999/xhtml"
+ xmlns:th="http://www.thymeleaf.org">
+
+<head>
+<meta charset="utf-8" />
+<meta http-equiv="X-UA-Compatible" content="IE=edge" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+
+<title>Twitter Search</title>
+
+<link rel="stylesheet" th:href="@{/lib/bootstrap/dist/css/bootstrap.css}" />
+<link rel="stylesheet" th:href="@{/lib/idilia-tagging-menu/dist/jquery.tagging_menu.bundle.css}" />
+<link rel="stylesheet" th:href="@{/css/tweet.css}" />
+<link rel="stylesheet" th:href="@{/css/application.css}" />
+
+<script th:src="@{/lib/jquery/dist/jquery.min.js}"></script>
+<script th:src="@{/lib/bootstrap/dist/js/bootstrap.js}"></script>
+<script th:src="@{/lib/jscroll/jquery.jscroll.js}"></script>
+<script th:src="@{/lib/typeahead.js/dist/typeahead.bundle.js}"></script>
+<script th:src="@{/lib/idilia-tagging-menu/dist/jquery.tagging_menu.bundle.js}"></script>
+<script th:src="@{/js/feed.js}"></script>
+<script th:src="@{/js/keywords.js}"></script>
+<script th:src="@{/js/search.js}"></script>
+<script th:src="@{/js/application.js}"></script>
+
+</head>
+
+<body role="document">
+
+ <div class="page-banner">&nbsp;</div>
+
+ <!--/* Warning message that is shown when server returns 408 on a ajax call */-->
+ <div id="session-expired" class="alert alert-danger error-message">
+  <span class="glyphicon glyphicon-warning-sign"></span> <strong>Warning:</strong>
+  your session has expired. Please reload page to proceed.
+ </div>
+
+ <!--/* Application Header (title & search box) */-->
+ <div class="fixed-container page-top">
+
+  <!--/* Application Title */-->
+  <div class="left">
+   <div class="page-title">Twitter Search</div>
+  </div>
+
+  <!--/* Start with a content area containing the search box */-->
+  <div class="right">
+   <div id="search-container">
+    <div th:replace="search/searchBox :: content"></div>
+   </div>
+  </div>
+
+ </div>
+
+ <!--/* Application Content (tweets & options)*/-->
+ <div class="fixed-container">
+
+  <div class="left">&nbsp;</div>
+
+  <div class="right">
+
+   <!--/* Where we will add the result feed */-->
+   <div id="feed-container">
+    <div id="feed"></div>
+   </div>
+
+  </div>
+ </div>
+
+ <!--/* Modal displayed when a keyword expression is highlighted */-->
+ <div class="modal" data-backdrop="false" tabindex="-1" role="dialog"
+  id="keyword-candidate-popup"
+  aria-labelledby="keyword-candidate-popup-title">
+  <div class="modal-dialog modal-sm" role="document">
+   <div class="modal-content">
+    <div class="modal-header">
+     <button type="button" class="close" data-dismiss="modal"
+      aria-label="Close">
+      <span aria-hidden="true">&times;</span>
+     </button>
+    </div>
+    <div class="modal-body">
+     <p>
+      When the expression "<span id="keyword-candidate">keyword</span>" is
+      found:
+     </p>
+     <button type="button" class="btn btn-success" id="positive-kwd-sel">Always
+      keep</button>
+     <button type="button" class="btn btn-danger" id="negative-kwd-sel">Always
+      discard</button>
+    </div>
+   </div>
+  </div>
+ </div>
+
+ <!--/* Vertically Fixed Boxes on the Left */-->
+ <div class="fixed-left">
+
+  <!--/* Tweet Stats Box */-->
+  <div id="feed-mgmt" class="panel panel-info">
+   <div class="panel-heading">Tweets</div>
+   <div class="panel-body">
+    <div id="feed-stats" th:include="feed/feedStats :: content"></div>
+    <div id="feed-view-ctrls">
+     <button type="button" class="btn btn-default btn-xs feed-sel"
+      th:attr="data-feed-type=${T(com.idilia.samples.ts.controller.FeedType).KEPT}">
+      Show Kept</button>
+     <button type="button" class="btn btn-default btn-xs feed-sel"
+      th:attr="data-feed-type=${T(com.idilia.samples.ts.controller.FeedType).DISCARDED}">Show
+      Discarded</button>
+    </div>
+   </div>
+  </div>
+
+  <!--/* Filtering Box */-->
+  <div id="kws-container" th:include="keywords/all"></div>
+
+ </div>
+
+<!--/* The text for the three popups used to explain why a tweet is in a feed */-->
+<div class="hidden">
+ <div id="status-discard-popup">This tweet has been discarded because it does not contain the right meaning of your word.</div>
+ <div id="status-keep-popup">This tweet has been kept because it contains the right meaning of your word or there is no evidence to reject it.</div>
+ <div id="status-unknown-popup">The status of this tweet is unknown because some user keywords were removed after its classification.</div>
+</div>
+
+<!--/* The text for the pop to explain how to add a user keyword */-->
+<div class="hidden">
+ <div id="user-keywords-instr-popup">Highlight one or more consecutive words in a tweet with your mouse and make them keep or discard filters.</div>
+</div>
+
+ <noscript>
+  <p>Javascript must be enabled for this application to work.</p>
+ </noscript>
+</body>
+</html>
+

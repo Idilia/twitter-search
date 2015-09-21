@@ -1,0 +1,24 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" xmlns:th="http://www.thymeleaf.org">
+<body>
+<div th:id="'kws-' + ${#strings.toLowerCase(kwType)}" th:class="kws-list" th:fragment="content (kwType, keywords)">
+
+ <!--/* 
+   This is the fragment for displaying the manual keywords.
+   
+   Argument:
+    kwType: Either KeywordType.POSITIVE or KeywordType.NEGATIVE
+    
+   Model objects:
+     keywords: List<String> to render
+ */-->
+
+
+ <div th:text="(${kwType.toString()} == 'POSITIVE') ? 'Keep Words' : 'Discard Words'">Positive</div>
+ <button type="button"  class="btn btn-xs btn-default kw-remove" th:each="kw : ${keywords}">
+  <span class="kw-text" th:text="${kw}"></span> <i class="glyphicon glyphicon-remove"></i>
+ </button>
+</div>
+</body>
+</html>
+

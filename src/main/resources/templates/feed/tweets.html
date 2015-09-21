@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml"
+ xmlns:th="http://www.thymeleaf.org">
+<body>
+ <div th:fragment="content" class="tweets">
+
+  <!--/* 
+   This is the fragment for rendering a series of tweets.
+   
+   Model objects:
+     docs: List<Tweet>
+     isKept: boolean true when showing the kept feed
+ */-->
+
+
+  <div th:each="doc: ${docs}" th:with="tweet=${doc.getDoc()}" class="tweet-ctr tweet-width">
+   <div class="tweet" 
+     th:classappend="${!isKept} ? status-discard : status-keep"
+     th:attr="data-tweet-id=${tweet.getId()}, data-pos-kws=${doc.getPositiveKeywordsStr()}, data-neg-kws=${doc.getNegativeKeywordsStr()}">
+
+    <!--/* Status icon: kept or discarded */-->
+    <div class="pull-right">
+     <span class="status-icon glyphicon ts-popup"/>
+    </div>
+
+    <div class="content">
+
+     <div class="header">
+      <a
+       th:href="@{https://twitter.com/{name}(name=${tweet.getScreenName()})}"
+       target="_blank"> <img class="avatar"
+       th:src="${tweet.getProfileImgUrl()}"></img> <strong
+       class="fullname" th:text="${tweet.getName()}"></strong> <span
+       class="username" th:text="${tweet.getScreenName()}"></span> <span
+       class="time"
+       th:text="${T(com.idilia.samples.ts.twitter.TweetFormatter).renderDate(tweet)}"></span>
+      </a>
+     </div>
+
+     <p class="text"
+      th:utext="${T(com.idilia.samples.ts.twitter.TweetFormatter).renderBody(tweet)}">This
+      is the text.</p>
+
+    </div>
+   </div>
+  </div>
+
+ </div>
+</body>
+</html>

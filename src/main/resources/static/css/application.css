@@ -1,0 +1,210 @@
+@CHARSET "UTF-8";
+
+body {
+	
+}
+
+.page-banner {
+	background-color: #337AB7; 
+	height: 37px;
+}
+
+.page-top {
+	padding-top:28px;			
+}
+
+.page-title {
+  width: 100%;
+  padding-left:18px;
+  color: #337AB7;
+  font-size: 24px;
+  line-height: 1.4;
+}
+
+.ts-popup:hover {
+	cursor: pointer;
+}
+
+#result-status {
+	display:none;
+}
+
+.result-comment {
+	font-size:16px;
+}
+
+/*
+ * Top Fixed Error Message: eg session time expired
+ */
+.error-message {
+	position: fixed;
+	top: 0px;
+	z-index: 100;
+	display:none;
+	width:100%;
+}
+
+/* 
+ * This is to avoid a slight misalignment between search
+ * icon and input text due to typeahead being slightly
+ * incompatible with Bootstrap 3 
+ */
+input#search-query.form-control {
+	float: none;
+}
+
+/* 
+ * Left side Show Kept/Discarded Button 
+ */
+#feed-view-ctrls {
+	margin-top: 10px;
+}
+
+/* 
+ * Left side filter box styling 
+ */
+.kws-list .glyphicon {
+	font-size: 10px;
+}
+
+.kws-list div {
+	font-weight:700;
+	font-size: 12px;
+	margin-bottom:5px;
+}
+
+.kws-list button {
+  margin-bottom: 5px;
+  margin-left: 5px;
+}
+
+.kws-list + .kws-list {
+  margin-top: 10px;
+}
+
+/* 
+ * Tweet match indicator: green check or red discard icon 
+ */
+
+
+.status-icon {
+	display:block;
+}
+/* same effect as glyphicon-ok-sign text-success */
+.tweet.status-keep .status-icon:before {
+  content: "\e084";
+  color: #3c763d;
+}
+/* same effect as glyphicon-remove-sign text-danger */
+.tweet.status-discard .status-icon:before {
+	content: "\e083";
+	color: #a94442;
+}
+/* same effect as glyphicon-question-sign text-warning */
+.tweet.status-unknown .status-icon:before {
+  content: "\e085";
+  color:#8a6d3b;
+}
+
+/* 
+ * Styling for the modal that we use for letting the user indicate if
+ * a selected keyword in the documents is positive or negative.
+ */
+#keyword-candidate-popup {
+	top: 0;
+	left: 0;
+	width: 400px;
+	height: 180px;
+	overflow: hidden;
+}
+
+#keyword-candidate-popup .modal-header .close {
+	margin-top: -8px;
+  margin-right: -5px;
+}
+
+#keyword-candidate-popup .modal-dialog {
+	
+}
+
+#keyword-candidate {
+	font-weight: bold;
+}
+
+/*
+ * Styling for the search box and its autocomplete suggestions
+ */
+#search-container {	
+	min-height: 200px;
+}
+
+.tt-suggestion {
+	display: block;
+	padding: 3px 20px;
+	clear: both;
+	font-weight: normal;
+	line-height: 1.42857143;
+	color: #333;
+	white-space: nowrap;
+}
+
+.tt-suggestion:hover {
+	color: #262626;
+	text-decoration: none;
+	background-color: #e8e8e8;
+	background-image: -webkit-linear-gradient(top, #f5f5f5 0%, #e8e8e8 100%);
+	background-image: -o-linear-gradient(top, #f5f5f5 0%, #e8e8e8 100%);
+	background-image: -webkit-gradient(linear, left top, left bottom, from(#f5f5f5),
+		to(#e8e8e8));
+	background-image: linear-gradient(to bottom, #f5f5f5 0%, #e8e8e8 100%);
+	filter: progid:DXImageTransform.Microsoft.gradient(startColorstr='#fff5f5f5',
+		endColorstr='#ffe8e8e8', GradientType=0);
+	background-repeat: repeat-x;
+}
+
+.tt-suggestion.tt-cursor {
+	color: #fff;
+	text-decoration: none;
+	background-color: #337ab7;
+	outline: 0;
+	background-image: -webkit-linear-gradient(top, #337ab7 0%, #2e6da4 100%);
+	background-image: -o-linear-gradient(top, #337ab7 0%, #2e6da4 100%);
+	background-image: -webkit-gradient(linear, left top, left bottom, from(#337ab7),
+		to(#2e6da4));
+	background-image: linear-gradient(to bottom, #337ab7 0%, #2e6da4 100%);
+	filter: progid:DXImageTransform.Microsoft.gradient(startColorstr='#ff337ab7',
+		endColorstr='#ff2e6da4', GradientType=0);
+	background-repeat: repeat-x;
+}
+
+#query-senses {
+	margin-top: 20px;
+}
+
+/*
+ * Fixed Left Side Bar
+ */
+.fixed-left {
+	position: fixed;	
+	margin-left: 18px;
+	width: 160px;
+	top: 126px;
+}
+
+.fixed-container {
+	height: auto;
+	overflow: hidden;
+}
+
+.right {
+	float: none; /* not needed, just for clarification */	
+	/* the next props are meant to keep this block independent from the other floated one */
+	width: auto;
+	overflow: hidden;
+}
+
+.left {
+	width: 200px;
+	float: left;	
+}
+​​

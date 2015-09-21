@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml"
+ xmlns:th="http://www.thymeleaf.org">
+<body>
+ <div th:fragment="content">
+
+  <!--/* 
+   This is the fragment for displaying the manual keywords.
+   
+   Model objects:
+     positive: List<String> of the positive keywords
+     negative: List<String> of the negative keywords
+ */-->
+  <div class="panel panel-success">
+   <div class="panel-heading">
+    Add Filters <span id="user-keywords-instr"
+     class="glyphicon glyphicon-question-sign pull-right ts-popup"
+     data-container="body" data-trigger="hover click" data-toggle="popover"
+     data-placement="right" data-delay="100"
+     data-content="Highlight one or more words in a tweet with your mouse and select them as keep or discard to assist automatic classification."></span>
+   </div>
+
+   <div class="panel-body">
+        
+    <div
+     th:replace="keywords/keywords :: content ('POSITIVE', ${positive})"></div>
+     
+     <div
+     th:replace="keywords/keywords :: content ('NEGATIVE', ${negative})"></div>    
+
+   </div>
+  </div>
+  <script>
+      $('#user-keywords-instr').popover({
+        container : 'body'
+      });
+    </script>
+ </div>
+</body>
+</html>
+

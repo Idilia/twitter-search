@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" xmlns:th="http://www.thymeleaf.org">
+<body>
+<div th:fragment="content">
+
+ <!--/* 
+   This is the fragment for displaying statistics or analysis for the feed.
+   This HTML is loaded as the inner content of #feed-stats in application.html
+   
+   Model objects:
+     kept: Number of kept documents so far
+     discarded: Number of discarded documents so far
+     snr: String with the signal to noise ratio expressed as a percentage
+ */-->
+
+
+<div id="feed-stats-inner">  
+  <span class="ts-label">Kept: </span><span class="nb-kept-results">0</span> (<span class="results-snr"></span>)<br />
+  <span class="ts-label">Discarded: </span><span class="nb-discarded-results"></span><br />
+</div>
+
+</div>
+</body>
+</html>
+

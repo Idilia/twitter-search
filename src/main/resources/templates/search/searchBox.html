@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml"
+ xmlns:th="http://www.thymeleaf.org">
+<body>
+
+ <div th:fragment="content">
+
+  <!--/* 
+   This is the fragment for displaying the search box. It pulls from the
+   model the object userSearch of type UserSearch to retrieve the current
+   value of the search expression.
+ */-->
+
+  <div role="search" id="query">
+   <form th:action="@{/search}" id="search-form" class="form-inline">
+
+    <div class="input-group">
+     <input class="typeahead form-control" type="text" id="search-query" 
+      placeholder="Enter search text" name="q" autocomplete="off"
+      spellcheck="false" size="40" required="required"
+      th:value="${userSearch.getExpression()}" aria-autocomplete="list"
+      aria-expanded="false" aria-owns="typeahead-dropdown-1" /> <span
+      class="input-group-btn">
+      <button class="btn btn-primary" id="search-button" type="button">
+       <span class="glyphicon glyphicon-search"></span>
+      </button>
+     </span>
+    </div>
+
+    <button class="hidden" type="submit">Set Senses</button>
+   </form>
+  </div>
+
+ </div>
+
+</body>
+</html>
+

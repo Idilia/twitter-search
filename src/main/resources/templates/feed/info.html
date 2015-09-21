@@ -1,0 +1,12 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml"
+ xmlns:th="http://www.thymeleaf.org">
+<body>
+
+ <div th:fragment="content" th:class="feed-next-ctr">
+  <div class="tweets tweet-width" th:classappend="${classAppend}" th:text="${msg}"></div>  
+ </div>
+
+</body>
+</html>
+

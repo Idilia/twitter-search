@@ -1,0 +1,90 @@
+/*
+ tweet rendering to imitate the rendering of tweets when
+ searching on twitter.com
+*/
+ 
+.tweet-ctr {
+ background: #fff;
+ border-left: 1px solid #e1e8ed;
+ border-right: 1px solid #e1e8ed;
+ background-clip: padding-box;
+ line-height: inherit;
+ text-align: inherit;
+ margin: 0 0 0 0px;
+ position: relative;
+ color: #292f33;
+ font-size: 14px;
+ font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
+}
+
+.tweet-width {
+ width: 590px;	
+}
+
+.tweet-feed-start {
+ border-top: 1px solid #e1e8ed;
+}
+
+.tweet-ctr .tweet {
+ border-top: 1px solid #e1e8ed;
+ position: relative;
+ min-height: 51px;
+ padding: 9px 12px;
+}
+
+.tweet-ctr .content {
+ margin-left: 58px;
+}
+
+.tweet-ctr .header a {
+ color: #8899a6;
+ text-decoration: none;
+ background: transparent;
+}
+
+.tweet-ctr .header img {
+ float: left;
+ margin-top: 3px;
+ margin-left: -58px;
+ width: 48px;
+ height: 48px;
+ border-radius: 5px;
+ border: 0;
+}
+
+.tweet-ctr .header .fullname {
+ font-weight: bold;
+ color: #292f33;
+}
+
+.tweet-ctr .header .username {
+ font-size: 13px;
+}
+
+.tweet-ctr .header .time {
+ font-size: 13px;
+}
+
+.tweet-ctr .header .time:before {
+ content: "\00b7";
+}
+
+.tweet-ctr .text {
+ word-wrap: break-word;
+ font-size: 14px;
+ line-height: 18px;
+}
+
+.tweet-ctr .text .tag {
+}
+
+.tweet-ctr .text .tag .hash {
+ color: #66b5d2;
+}
+
+.tweet-ctr .text .tag .hashtext {
+ color: #0084b4;
+ font-weight: 400;
+}
+
+
