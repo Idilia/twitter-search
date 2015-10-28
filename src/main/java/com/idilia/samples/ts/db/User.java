@@ -55,6 +55,10 @@ public class User implements Persistable<UUID> {
     return id;
   }
   
+  public void setId(UUID id) {
+    this.id = id;
+  }
+  
   /** Used by spring to determine is persisting or saving.
    * We need to override because the id is allocated up front */
   @Override

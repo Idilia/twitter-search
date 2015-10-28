@@ -1,7 +1,8 @@
 @CHARSET "UTF-8";
 
-body {
-	
+/* showing hourglass during ajax queries */
+html.busy, html.busy * {  
+  cursor: progress;  
 }
 
 .page-banner {

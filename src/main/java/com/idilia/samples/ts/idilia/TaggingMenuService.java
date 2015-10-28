@@ -175,8 +175,8 @@ public class TaggingMenuService {
           menuReq.setTf(disResp.getResult()).setTemplate(senseCardTemplate).setAddAnySense()
               .setFilters("noDynamic");
 
-          //if (customerId != null)
-          //  menuReq.setAddCreateSense().setCustomerId(customerId);
+          if (customerId != null)
+            menuReq.setAddCreateSense().setFilters("noDynamic noOther").setCustomerId(customerId);
 
           return kbClient.taggingMenuAsync(menuReq);
         });

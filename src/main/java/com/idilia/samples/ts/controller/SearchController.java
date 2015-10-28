@@ -78,9 +78,10 @@ public class SearchController {
 
     /* Recover the user from the cookie value */
     User user = null;
+    UUID uId = null;
     if (userIdS != null) {
       try {
-        UUID uId = UUID.fromString(userIdS);
+        uId = UUID.fromString(userIdS);
         List<User> users = userRepo.findById(uId);
         if (!users.isEmpty())
           user = users.get(0);
@@ -91,6 +92,8 @@ public class SearchController {
     /* Create the user when not found */
     if (user == null) {
       user = User.create();
+      if (uId != null)
+        user.setId(uId);
       user = userRepo.save(user);
       logger.debug("Created new user " + user.toString());
     }

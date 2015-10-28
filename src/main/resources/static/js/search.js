@@ -95,6 +95,7 @@ idilia.ts.search = function() {
     if ($("#search-query").val().trim() !== "") {
       var $form = $("#search-form");
       var formData = $form.serialize();
+      $("html").addClass("busy");
       $.post($form.attr("action"), formData).done(function(data) {
         /*
          * Replace the search area with the new content that includes the sense
@@ -116,6 +117,8 @@ idilia.ts.search = function() {
         initAutocompleteUI();
       }).fail(function(jqXHR, textStatus) {
         alert("Server failed to accept new search");
+      }).always(function() {
+        $("html").removeClass("busy");
       });
     }
   };
