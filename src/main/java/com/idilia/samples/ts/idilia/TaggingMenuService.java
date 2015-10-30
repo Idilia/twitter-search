@@ -173,7 +173,8 @@ public class TaggingMenuService {
            */
           TaggingMenuRequest menuReq = new TaggingMenuRequest();
           menuReq.setTf(disResp.getResult()).setTemplate(senseCardTemplate).setAddAnySense()
-              .setFilters("noDynamic");
+              .setFilters("noDynamic")
+              .setCollapsing("equivs");
 
           if (customerId != null)
             menuReq.setAddCreateSense().setFilters("noDynamic noOther").setCustomerId(customerId);
