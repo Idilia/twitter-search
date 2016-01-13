@@ -78,4 +78,4 @@ You will need maven 3.1 or better and java 8 installed.
 * Obtain project keys from Idilia at www.idilia.com/developer/my-projects
 * Clone the project: git clone https://github.com/Idilia/twitter-search.git
 * Run: mvn spring-boot:run -DidiliaAccessKey=&lt;access key&gt; -DidiliaPrivateKey=&lt;privateKey&gt; -Dspring.profiles.active=dev
-* Navigate to [http://localhost:8780/ts](http://localhost:8780/ts) to access the application.
+* Navigate to [http://localhost:8780/ts/](http://localhost:8780/ts/) to access the application.

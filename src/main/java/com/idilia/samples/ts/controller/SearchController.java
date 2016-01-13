@@ -26,7 +26,6 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.SessionAttributes;
-import org.springframework.web.context.request.async.DeferredResult;
 
 import com.idilia.samples.ts.db.Search;
 import com.idilia.samples.ts.db.SearchDbService;
@@ -191,10 +190,10 @@ public class SearchController {
    *          string with the search expression entered
    * @param model
    *          Spring model
-   * @return
+   * @return Completable future with the name of the rendering template
    */
   @RequestMapping("search")
-  public DeferredResult<String> search(@ModelAttribute User user,
+  public CompletableFuture<String> search(@ModelAttribute User user,
       @ModelAttribute UserSearch search, @RequestParam("q") String expr, Model model) {
 
     logger.debug("Request for a new search expression: " + expr);
@@ -248,29 +247,18 @@ public class SearchController {
       tmFtr = taggingMenuSvc.getTaggingMenu(tmText, user.getId());
     }
 
-    /*
-     * Spring does not understand CompletableFuture but it has an equivalent
-     * DeferredResult. When our CompletableFuture is set upon completion of the
-     * menu, set the deferred result. This triggers applying the template and
-     * HTML generation.
+    /* 
+     * Return a future that post processes the tagging menu response to
+     * add it to the model and generates the HTML fragment.
      */
-    final DeferredResult<String> result = new DeferredResult<>(60 * 1000);
-
-    tmFtr.whenComplete((/* TaggingMenuResponse */tm, ex) -> {
+    return tmFtr.handle((/* TaggingMenuResponse */tm, ex) -> {
       if (ex != null) {
-        /*
-         * This will normally be an IdiliaClientException wrapped inside a
-         * CompletionException
-         */
-        result.setErrorResult(new TaggingMenuException());
         logger.error("Failed to generate tagging menu", ex);
-      } else {
-        model.addAttribute("tm", tm);
-        result.setResult("search/searchWithSenses :: content");
+        throw new TaggingMenuException();
       }
+      model.addAttribute("tm", tm);
+      return "search/searchWithSenses :: content";
     });
-
-    return result;
   }
 
   /** Exception thrown when we fail to generate a tagging menu */

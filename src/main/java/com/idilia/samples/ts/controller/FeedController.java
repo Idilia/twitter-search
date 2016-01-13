@@ -1,6 +1,5 @@
 package com.idilia.samples.ts.controller;
 
-import java.util.List;
 import java.util.concurrent.CompletableFuture;
 
 import org.slf4j.Logger;
@@ -14,7 +13,6 @@ import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.bind.annotation.SessionAttributes;
-import org.springframework.web.context.request.async.DeferredResult;
 import org.springframework.web.util.UriComponents;
 import org.springframework.web.util.UriComponentsBuilder;
 
@@ -99,10 +97,10 @@ public class FeedController {
    *          maximum number of documents to return
    * @param model
    *          Spring model
-   * @return deferred result with the name of the template to generate the HTML
+   * @return Completable future with the name of the rendering template
    */
   @RequestMapping("feed/{feedType}/next")
-  public DeferredResult<String> feedNext(@ModelAttribute UserSearch search,
+  public CompletableFuture<String> feedNext(@ModelAttribute UserSearch search,
       final @PathVariable("feedType") FeedType feedType,
       final @RequestParam(value = "count", defaultValue = "1") Integer minCnt,
       final @RequestParam(value = "maxCnt", defaultValue = "5") Integer maxCnt,
@@ -115,65 +113,55 @@ public class FeedController {
 
     /*
      * Request the next group of results from the UserSearch. This is an
-     * asynchronous call that we complete using a "whenComplete" stage to
+     * asynchronous call that we handle to
      * process the returned documents and any exception thrown.
      */
-    final DeferredResult<String> result = new DeferredResult<>(60 * 1000);
-    CompletableFuture<List<FeedDocument>> future = search.getDocumentsAsync(
-        feedType, minCnt, maxCnt);
-    future.whenComplete((docs, ex) -> {
+    return search.getDocumentsAsync(feedType, minCnt, maxCnt).thenApply(docs -> {
 
-      if (ex != null) {
+      model.addAttribute("docs", docs);
 
-        logger.error("Encountered exception when fetching documents", ex);
-        model.addAttribute("classAppend", "alert alert-danger");
-        model.addAttribute("msg", "Encountered a problem: "
-            + ex.getCause().getMessage());
-        result.setResult("feed/info :: content");
+      if (!docs.isEmpty()) {
+
+        // We found tweets
+        model.addAttribute("url", getNextLink(feedType, minCnt, maxCnt).toUriString());
+        return "feed/feedNext :: content";
+
+      } else if (search.getFeed(FeedType.KEPT).getNumAssigned()
+          + search.getFeed(FeedType.DISCARDED).getNumAssigned() == 0) {
+
+        // There are no tweets at all
+        return "feed/noTweets";
+
+      } else if (search.getFeed(FeedType.KEPT).getNumAssigned() == 0
+          && feedType == FeedType.KEPT) {
+
+        // There are only discarded tweets
+        model.addAttribute("classAppend", "result-comment");
+        model.addAttribute("msg", "All the tweets have been discarded.");
+        return "feed/info :: content";
+
+      } else if (search.getFeed(FeedType.DISCARDED).getNumAssigned() == 0
+          && feedType == FeedType.DISCARDED) {
+
+        // There are only kept tweets
+        model.addAttribute("classAppend", "result-comment");
+        model.addAttribute("msg", "All the tweets have been kept.");
+        return "feed/info :: content";
 
       } else {
 
-        model.addAttribute("docs", docs);
-
-        if (!docs.isEmpty()) {
-
-          // We found tweets
-          model.addAttribute("url", getNextLink(feedType, minCnt, maxCnt).toUriString());
-          result.setResult("feed/feedNext :: content");
-
-        } else if (search.getFeed(FeedType.KEPT).getNumAssigned()
-            + search.getFeed(FeedType.DISCARDED).getNumAssigned() == 0) {
-  
-          // There are no tweets at all
-          result.setResult("feed/noTweets");
-  
-        } else if (search.getFeed(FeedType.KEPT).getNumAssigned() == 0
-            && feedType == FeedType.KEPT) {
-  
-          // There are only discarded tweets
-          model.addAttribute("classAppend", "result-comment");
-          model.addAttribute("msg", "All the tweets have been discarded.");
-          result.setResult("feed/info :: content");
-  
-        } else if (search.getFeed(FeedType.DISCARDED).getNumAssigned() == 0
-            && feedType == FeedType.DISCARDED) {
-  
-          // There are only kept tweets
-          model.addAttribute("classAppend", "result-comment");
-          model.addAttribute("msg", "All the tweets have been kept.");
-          result.setResult("feed/info :: content");
-  
-        } else {
-  
-          // There are no more tweets
-          model.addAttribute("classAppend", "alert alert-info");
-          model.addAttribute("msg", "No more tweets.");
-          result.setResult("feed/info :: content");
-        }
+        // There are no more tweets
+        model.addAttribute("classAppend", "alert alert-info");
+        model.addAttribute("msg", "No more tweets.");
+        return "feed/info :: content";
       }
+    }).exceptionally(ex -> {
+      logger.error("Encountered exception when fetching documents", ex);
+      model.addAttribute("classAppend", "alert alert-danger");
+      model.addAttribute("msg", "Encountered a problem: "
+          + ex.getCause().getMessage());
+      return "feed/info :: content";
     });
-
-    return result;
   }
 
   
