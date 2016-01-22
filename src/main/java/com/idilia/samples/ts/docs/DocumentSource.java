@@ -27,4 +27,12 @@ public interface DocumentSource {
    * @return a search token to be interpreted by the document source.
    */
   SearchToken createSearchToken(String searchExpression);
+  
+  /**
+   * Create search token from another one to resume the search after
+   * the already returned documents.
+   * @param searchExpression string of the search expression.
+   * @param token an existing token where we can read the last returned location
+   */
+  SearchToken extendSearch(String searchExpression, SearchToken token);
 }

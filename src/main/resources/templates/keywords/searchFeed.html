@@ -1,0 +1,20 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" xmlns:th="http://www.thymeleaf.org">
+<body>
+<div th:fragment="content">
+
+ <!--/* 
+   This is the fragment for constructing the search feed
+   for a specific keyword. It includes the documents available
+   and a link to pull more results.
+   
+   Model objects:
+     docs: List<? extends Document> which contains List<Tweet>
+     url: String with the request for the next documents
+ */-->
+  <div th:replace="feed/tweets :: content" />
+  <a th:if="${url}" class="hidden feed-next" th:href="@{${url}(k=${keyword})}">Next</a>
+</div>
+</body>
+</html>
+

@@ -25,6 +25,7 @@ public class Beans {
   @Autowired
   Environment env;
   
+  /** The OAuth credentials used with the Twitter search API */
   @Bean
   OAuthCredentials oauthCredentials() {
     return new OAuthCredentials(
@@ -34,6 +35,8 @@ public class Beans {
         env.getProperty("twitterOAuthTokenSecret"));
   }
   
+  
+  /** The Idilia credentials used with the Idilia API */
   @Bean
   IdiliaCredentials idiliaCredentials() throws InvalidKeyException {
     return new IdiliaCredentials(
@@ -41,16 +44,31 @@ public class Beans {
         env.getProperty("idiliaPrivateKey"));
   }
   
+  
+  /** 
+   * The implementation for the abstract document source uses an
+   * implementation that uses the Twitter search API 
+   */
   @Bean
   DocumentSource documentSource() {
     return new TwitterDocumentSource(oauthCredentials());
   }
   
+  
+  /**
+   * The document matching service uses an implementation that
+   * uses the Idilia text eval API and configured with Idilia credentials.
+   */
   @Bean
   MatchingEvalService docMatchingService() throws InvalidKeyException {
     return new MatchingEvalService(idiliaCredentials());
   }
-  
+
+  /**
+   * Tagging menus (setting senses of words in a search expression) uses
+   * a TaggingMenuService configured with the Idilia credentials
+   * and the template in use.
+   */
   @Bean
   TaggingMenuService taggingMenuService() throws InvalidKeyException {
     return new TaggingMenuService(

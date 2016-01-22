@@ -1,7 +1,5 @@
 package com.idilia.samples.ts.controller;
 
-import java.util.concurrent.CompletableFuture;
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Controller;
@@ -13,8 +11,11 @@ import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.bind.annotation.SessionAttributes;
+import org.springframework.web.context.request.async.DeferredResult;
 import org.springframework.web.util.UriComponents;
 import org.springframework.web.util.UriComponentsBuilder;
+
+import com.idilia.samples.ts.twitter.TwitterHttpAsyncClient.TwitterRateLimitingException;
 
 /**
  * Controller to provide the document feeds (kept and discarded) and overall
@@ -100,7 +101,7 @@ public class FeedController {
    * @return Completable future with the name of the rendering template
    */
   @RequestMapping("feed/{feedType}/next")
-  public CompletableFuture<String> feedNext(@ModelAttribute UserSearch search,
+  public DeferredResult<String> feedNext(@ModelAttribute UserSearch search,
       final @PathVariable("feedType") FeedType feedType,
       final @RequestParam(value = "count", defaultValue = "1") Integer minCnt,
       final @RequestParam(value = "maxCnt", defaultValue = "5") Integer maxCnt,
@@ -112,11 +113,18 @@ public class FeedController {
     model.addAttribute("isKept", feedType == FeedType.KEPT);
 
     /*
+     * We return a DeferredResult instead of a CompletionFuture because we
+     * can specify a longer than normal timeout. This is necessary when
+     * we have to search for a long time for a rare sense.
+     */
+    final DeferredResult<String> dfRes = new DeferredResult<>((long)5 * 60 * 1000);
+
+    /*
      * Request the next group of results from the UserSearch. This is an
      * asynchronous call that we handle to
      * process the returned documents and any exception thrown.
      */
-    return search.getDocumentsAsync(feedType, minCnt, maxCnt).thenApply(docs -> {
+    search.getDocumentsAsync(feedType, minCnt, maxCnt).thenApply(docs -> {
 
       model.addAttribute("docs", docs);
 
@@ -130,7 +138,7 @@ public class FeedController {
           + search.getFeed(FeedType.DISCARDED).getNumAssigned() == 0) {
 
         // There are no tweets at all
-        return "feed/noTweets";
+        return "feed/noTweets :: content";
 
       } else if (search.getFeed(FeedType.KEPT).getNumAssigned() == 0
           && feedType == FeedType.KEPT) {
@@ -155,14 +163,24 @@ public class FeedController {
         model.addAttribute("msg", "No more tweets.");
         return "feed/info :: content";
       }
-    }).exceptionally(ex -> {
+      
+    }).exceptionally(cex -> {
+      RuntimeException ex = (RuntimeException) cex.getCause();
       logger.error("Encountered exception when fetching documents", ex);
       model.addAttribute("classAppend", "alert alert-danger");
-      model.addAttribute("msg", "Encountered a problem: "
-          + ex.getCause().getMessage());
+      if (ex instanceof TwitterRateLimitingException)
+        model.addAttribute("msg", "Twitter search API rate limit exceeded.");
+      else
+        model.addAttribute("msg", "Encountered a problem: " + ex.getCause().getMessage());
       return "feed/info :: content";
+      
+    }).whenComplete((tmplt,ex) -> {
+      dfRes.setResult(tmplt);
     });
+    
+    return dfRes;
   }
+  
 
   
   /**

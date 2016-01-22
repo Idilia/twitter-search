@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" xmlns:th="http://www.thymeleaf.org">
+<body>
+
+ <!--/* 
+   This is the fragment generated when assessing the usefulness of a keyword.
+   
+   Model objects:
+     isKept: boolean true when showing the kept feed
+ */-->
+
+ <div th:fragment="content (isKept)">
+
+  <div class="modal keyword-candidate-popup" tabindex="-1" role="dialog" th:id="${isKept} ? 'keyword-candidate-popup-KEPT' : 'keyword-candidate-popup-DISCARDED'"
+   aria-labelledby="keyword-candidate-popup-title">
+   <div class="modal-dialog modal-lg" role="document">
+    <div class="modal-content">
+     <div class="modal-header">
+      <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+       <span aria-hidden="true">&times;</span>
+      </button>
+      <h4>
+       User Word Addition - <span class="keyword-candidate">keyword</span>
+      </h4>
+     </div>
+     <div class="modal-body">
+      <p th:if="${!isKept}" class="kwp-hdr">Rejected documents that will be kept by adding this expression:</p>
+      <p th:if="${isKept}" class="kwp-hdr">Kept documents that will be discarded by adding this expression:</p>
+      <div class="keyword-candidate-preview">
+       <div class="feed">
+        <div class="feed-inner"/>
+       </div>
+      </div>
+     </div>
+     <div class="modal-footer">
+      <button type="button" class="btn btn-default" data-dismiss="modal">Close</button>
+      <button th:if="${!isKept}" type="button" class="btn btn-primary" id="positive-kwd-sel">Add Keep Word</button>
+      <button th:if="${isKept}" type="button" class="btn btn-primary" id="negative-kwd-sel">Add Discard Word</button>
+     </div>
+    </div>
+   </div>
+  </div>
+
+ </div>
+</body>
+</html>

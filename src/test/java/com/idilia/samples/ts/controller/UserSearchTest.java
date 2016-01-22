@@ -18,6 +18,7 @@ import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 import com.idilia.samples.ts.config.Beans;
 import com.idilia.samples.ts.db.User;
 import com.idilia.samples.ts.docs.DocumentSource;
+import com.idilia.samples.ts.docs.SearchToken;
 import com.idilia.samples.ts.idilia.MatchingEvalService;
 import com.idilia.tagging.Sense;
 
@@ -52,7 +53,8 @@ public class UserSearchTest {
     List<Sense> exprSenses = Collections.singletonList(
         new Sense(0, 1, "Apple", "Apple/N8"));
     us.setExpressionSenses(exprSenses);
-    us.start();
+    SearchToken st = docSrc.createSearchToken(us.getExpression());
+    us.start(st);
     List<FeedDocument> docs = us.getDocuments(FeedType.KEPT, 1, 1);
     assertEquals(1, docs.size());
     

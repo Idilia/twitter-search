@@ -102,6 +102,8 @@ idilia.ts.search = function() {
          * selection for the words. Activate the sense menu.
          */
         $("#search-container").html(data);
+        $(".idl-tile-any .idl-def p").html("Search for any meaning");
+        
         renderTaggingMenu();
 
         /*

@@ -47,9 +47,18 @@ public class TwitterDocumentSource implements DocumentSource, Closeable {
     twitterClient.close();
   }
   
+  @Override
+  public SearchToken extendSearch(String searchExpression, SearchToken token) {
+    TwitterSearchToken st = (TwitterSearchToken) token;
+    TwitterSearchToken res = new TwitterSearchToken(searchExpression, maxIterations);
+    res.setMaxId(st.getMaxId());
+    return res;
+  }
+  
   /** The HTTP client that we use to reach the Twitter API */
   private final TwitterHttpAsyncClient twitterClient;
   
   /** Maximum number of requests for the same search */
   final private static int maxIterations = 50;
+
 }

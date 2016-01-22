@@ -26,7 +26,7 @@ html.busy, html.busy * {
 	cursor: pointer;
 }
 
-#result-status {
+.result-status {
 	display:none;
 }
 
@@ -111,25 +111,32 @@ input#search-query.form-control {
  * Styling for the modal that we use for letting the user indicate if
  * a selected keyword in the documents is positive or negative.
  */
-#keyword-candidate-popup {
-	top: 0;
-	left: 0;
-	width: 400px;
-	height: 180px;
-	overflow: hidden;
+.keyword-candidate-popup {
 }
 
-#keyword-candidate-popup .modal-header .close {
-	margin-top: -8px;
-  margin-right: -5px;
+.keyword-candidate-popup .modal-header .close {
 }
 
-#keyword-candidate-popup .modal-dialog {
+.keyword-candidate-popup .modal-dialog {
 	
 }
+.keyword-candidate-popup .keyword-candidate-preview {
+ height: 500px;
+ overflow-y: scroll;
+ overflow-x: hidden;
+ margin-left: 50px; 
+}
 
-#keyword-candidate {
+.keyword-candidate-popup .tweet .status-icon {
+ display:none;
+}
+
+.keyword-candidate {
 	font-weight: bold;
+}
+
+.keyword-candidate-popup .kwp-hdr {
+ font-size: larger;
 }
 
 /*

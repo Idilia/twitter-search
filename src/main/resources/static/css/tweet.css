@@ -18,7 +18,7 @@
 }
 
 .tweet-width {
- width: 590px;	
+ max-width: 590px;	
 }
 
 .tweet-feed-start {

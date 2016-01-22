@@ -39,8 +39,14 @@ public class TwitterHttpAsyncClient implements Closeable {
 
   @SuppressWarnings("serial")
   public static class TwitterClientException extends RuntimeException {
-    public TwitterClientException(String msg) { super(msg); }
-    public TwitterClientException(Throwable t) { super(t); }
+    TwitterClientException() {}
+    TwitterClientException(String msg) { super(msg); }
+    TwitterClientException(Throwable t) { super(t); }
+  }
+  
+  @SuppressWarnings("serial")
+  public static class TwitterRateLimitingException extends TwitterClientException {
+    TwitterRateLimitingException() { }
   }
   
   /** Apache HTTP async client */
@@ -154,8 +160,11 @@ public class TwitterHttpAsyncClient implements Closeable {
               LinkedHashMap<String,Object> cv = (LinkedHashMap<String,Object>) o;
               Integer code = (Integer) cv.get("code");
               String msg = (String) cv.get("message");
-              future.completeExceptionally(new TwitterClientException(
-                  String.format("Twitter API error: %d, %s", code, msg)));
+              if (code == 88)
+                future.completeExceptionally(new TwitterRateLimitingException());
+              else
+                future.completeExceptionally(new TwitterClientException(
+                    String.format("Twitter API error: %d, %s", code, msg)));
             }
             
             /* Read the link for the next results. It is not always available

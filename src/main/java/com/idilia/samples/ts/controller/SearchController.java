@@ -94,7 +94,7 @@ public class SearchController {
       if (uId != null)
         user.setId(uId);
       user = userRepo.save(user);
-      logger.debug("Created new user " + user.toString());
+      logger.info("Created new user " + user.toString());
     }
 
     // Create or refresh the cookie
@@ -147,7 +147,7 @@ public class SearchController {
      */
     User user = getUser(userIdS, response);
     model.addAttribute(user);
-    model.addAttribute(new UserSearch(user, "", docSrc, matchSvc));
+    model.addAttribute("userSearch", new UserSearch(user, "", docSrc, matchSvc));
 
     /* Return the template with the search box */
     return "application";
@@ -193,8 +193,10 @@ public class SearchController {
    * @return Completable future with the name of the rendering template
    */
   @RequestMapping("search")
-  public CompletableFuture<String> search(@ModelAttribute User user,
-      @ModelAttribute UserSearch search, @RequestParam("q") String expr, Model model) {
+  public CompletableFuture<String> search(
+      @ModelAttribute User user,
+      @ModelAttribute UserSearch search,
+      @RequestParam("q") String expr, Model model) {
 
     logger.debug("Request for a new search expression: " + expr);
 
@@ -291,7 +293,8 @@ public class SearchController {
     logger.debug("search with senses: " + senses.toString());
 
     search.setExpressionSenses(senses);
-    search.start();
+    searchDbSvc.save(search.toDb());
+    search.start(docSrc.createSearchToken(search.getExpression()));
 
     // Return the initial content for the feed for kept documents
     return "redirect:/feed/" + FeedType.KEPT + "/start";

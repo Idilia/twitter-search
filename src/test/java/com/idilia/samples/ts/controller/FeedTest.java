@@ -22,7 +22,7 @@ public class FeedTest {
     assertEquals(3, fd.getNumAssigned());
     
     Document doc = fd.getNext(1).get(0).getDoc();
-    assertEquals("document one", doc.getText());
+    assertEquals("document three", doc.getText());
     assertEquals(2, fd.getNumAvailable());
     assertEquals(3, fd.getNumAssigned());
     

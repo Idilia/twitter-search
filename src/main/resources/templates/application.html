@@ -17,9 +17,9 @@
 
 <script th:src="@{/lib/jquery/dist/jquery.min.js}"></script>
 <script th:src="@{/lib/bootstrap/dist/js/bootstrap.js}"></script>
-<script th:src="@{/lib/jscroll/jquery.jscroll.js}"></script>
 <script th:src="@{/lib/typeahead.js/dist/typeahead.bundle.js}"></script>
 <script th:src="@{/lib/idilia-tagging-menu/dist/jquery.tagging_menu.bundle.js}"></script>
+<script th:src="@{/js/iscroll.js}"></script>
 <script th:src="@{/js/feed.js}"></script>
 <script th:src="@{/js/keywords.js}"></script>
 <script th:src="@{/js/search.js}"></script>
@@ -62,39 +62,24 @@
   <div class="right">
 
    <!--/* Where we will add the result feed */-->
-   <div id="feed-container">
-    <div id="feed"></div>
+   <div id="feed-containers">
+    <div id="feed-container-KEPT">
+     <div class="feed"></div>
+    </div>
+ 
+    <div id="feed-container-DISCARDED">
+     <div class="feed"></div>
+    </div>
    </div>
-
+   
   </div>
+  
  </div>
 
  <!--/* Modal displayed when a keyword expression is highlighted */-->
- <div class="modal" data-backdrop="false" tabindex="-1" role="dialog"
-  id="keyword-candidate-popup"
-  aria-labelledby="keyword-candidate-popup-title">
-  <div class="modal-dialog modal-sm" role="document">
-   <div class="modal-content">
-    <div class="modal-header">
-     <button type="button" class="close" data-dismiss="modal"
-      aria-label="Close">
-      <span aria-hidden="true">&times;</span>
-     </button>
-    </div>
-    <div class="modal-body">
-     <p>
-      When the expression "<span id="keyword-candidate">keyword</span>" is
-      found:
-     </p>
-     <button type="button" class="btn btn-success" id="positive-kwd-sel">Always
-      keep</button>
-     <button type="button" class="btn btn-danger" id="negative-kwd-sel">Always
-      discard</button>
-    </div>
-   </div>
-  </div>
- </div>
-
+ <div th:replace="keywords/add :: content(true)"/>
+ <div th:replace="keywords/add :: content(false)"/>
+ 
  <!--/* Vertically Fixed Boxes on the Left */-->
  <div class="fixed-left">
 

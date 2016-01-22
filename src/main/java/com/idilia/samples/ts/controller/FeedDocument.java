@@ -73,7 +73,7 @@ public class FeedDocument {
    * positive keywords were found, negative if some negatives were found and 0
    * when none were found. This same policy is implemented in feed.js.
    * 
-   * @return a number < 0, == 0, or > 0 for rejected, inconclusive, kept
+   * @return a number &lt; 0, == 0, or &gt; 0 for rejected, inconclusive, kept
    */
   int getClassificationFromUserKeywords() {
     if (!posKws.isEmpty())
@@ -114,7 +114,7 @@ public class FeedDocument {
   }
 
   /**
-   * Retrieve the user keywords to keep the document.
+   * Retrieve the user keywords to discard the document.
    * 
    * @return user keywords found in document or null if none
    */
@@ -159,6 +159,23 @@ public class FeedDocument {
     for (String kw : kws)
       sb.append(kw).append('\t');
     return sb.toString();
+  }
+  
+  /**
+   * Return the status classes for the tweet to communicate with the javascript
+   * client (see feed.js) the status of the tweet. The classes are:
+   * <li>status-keep / status-discard: Whether the tweet was kept or discarded
+   * by either the eval API or the user keywords
+   * <li>eval-status-keep / eval-status-discard: Present when the classification
+   * decision was determined by the API instead of user keywords.
+   * 
+   * @param isKept true when the document has been marked as kept
+   */
+  public String getStatusClasses(boolean isKept) {
+    if (getClassificationFromUserKeywords() == 0)
+      return isKept ? "status-keep eval-status-keep" : "status-discard eval-status-discard";
+    else
+      return isKept ? "status-keep" : "status-discard";
   }
 
   final private Document doc;

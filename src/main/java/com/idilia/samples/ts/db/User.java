@@ -77,7 +77,7 @@ public class User implements Persistable<UUID> {
   }
   
   @Override public int hashCode() {
-    return Objects.hash(id);
+    return id.hashCode();
   }
   
   @Override public String toString() {

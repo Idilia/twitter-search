@@ -13,7 +13,7 @@
      url: String with the request for the next documents
  */-->
  <div th:replace="feed/tweets :: content" />
- <a th:if="${url}" th:class="hidden" th:href="@{${url}}">Next</a>
+ <a th:if="${url}" class="hidden feed-next" th:href="@{${url}}">Next</a>
 
 </div>
 </body>

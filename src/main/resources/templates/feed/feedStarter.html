@@ -8,8 +8,8 @@
   <div class="tweet-width">
 
    <!--/* Kept Results */-->
-   <p id="result-status" th:if="${isKept}">
-    <strong>Kept <span class="nb-kept-results">0</span> in <span
+   <p class="result-status" th:if="${isKept}">
+    <strong>Kept <span class="nb-kept-results">0</span> of <span
      class="total-results">0</span> tweets
     </strong>
     <button type="button"
@@ -19,9 +19,9 @@
    </p>
 
    <!--/* Discarded Results */-->
-   <p id="result-status" th:if="${!isKept}">
+   <p class="result-status" th:if="${!isKept}">
     <strong>Discarded <span class="nb-discarded-results">0</span>
-     in <span class="total-results">0</span> tweets
+     of <span class="total-results">0</span> tweets
     </strong>
 
     <button type="button"
@@ -40,8 +40,8 @@
    Model objects:
      url: String with the request for the first documents
  */-->
-  <div id="feed-inner" th:class="${isKept?'keep-list':'discard-list'}">
-   <a class="hidden" th:href="@{${url}}">Next</a>
+  <div class="feed-inner" th:class="${isKept?'keep-list':'discard-list'}" th:classappend="feed-inner" >
+   <a class="hidden feed-next" th:href="@{${url}}">Next</a>
   </div>
  </div>
 </body>

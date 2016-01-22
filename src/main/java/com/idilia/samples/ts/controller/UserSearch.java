@@ -6,7 +6,6 @@ import java.util.List;
 import java.util.concurrent.CancellationException;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionException;
-import java.util.concurrent.atomic.AtomicReference;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -48,7 +47,7 @@ public class UserSearch {
    * A search token stored transparently here and used by the DocumentSource to
    * retrieve documents.
    */
-  private AtomicReference<SearchToken> searchTokenRef;
+  private SearchToken searchToken;
 
   /**
    * Keywords entered by the user to conclusively identify a document as
@@ -82,6 +81,13 @@ public class UserSearch {
    * when it needs more documents to assign to the feeds.
    */
   private CompletableFuture<Boolean> jobRunning = CompletableFuture.completedFuture(Boolean.FALSE);
+
+  /**
+   * A filter applied to documents obtained and used when running a sub-search
+   * for the same senses but with an additional keyword being present. Normally
+   * null.
+   */
+  private Pattern docFilterRe;
 
   private UserSearch() {
     this.matching = new Feed(FeedType.KEPT, -1); // unlimited size
@@ -146,6 +152,18 @@ public class UserSearch {
   }
 
   /**
+   * Record a filtering keyword. This is an expression that is used to filter
+   * the documents returned by the document service. Documents without it are
+   * thrown away (not rejected).
+   * 
+   * @param expr
+   *          expression compiled as a regex that documents must find.
+   */
+  public void setDocumentFilter(String expr) {
+    this.docFilterRe = Pattern.compile(expr);
+  }
+
+  /**
    * Set the senses for the words of the search expression.
    * 
    * @param senses
@@ -162,12 +180,22 @@ public class UserSearch {
 
   /**
    * Reset the processing to start a new search
+   * 
+   * @param search
+   *          token that describes the search to perform
    */
-  public void start() {
+  public void start(SearchToken token) {
     jobRunning.cancel(false);
-    searchTokenRef = new AtomicReference<SearchToken>(docSrc.createSearchToken(getExpression()));
+    searchToken = token;
     matching.empty();
     rejected.empty();
+  }
+
+  /**
+   * Return the search token
+   */
+  public SearchToken getSearchToken() {
+    return searchToken;
   }
 
   /**
@@ -272,7 +300,7 @@ public class UserSearch {
 
       if (!toReclass.isEmpty()) {
         try {
-          List<Integer> res = matchSvc.matchAsync(getExpressionSenses(), toReclass).join();
+          List<Integer> res = matchSvc.matchAsync(getExpressionSenses(), toReclass, dbSearch.getUser().getId()).join();
           for (int i = 0; i < res.size(); ++i) {
             Document d = toReclass.get(i);
             if (res.get(i) < 0)
@@ -340,7 +368,7 @@ public class UserSearch {
     final CompletableFuture<List<FeedDocument>> future = new CompletableFuture<>();
     Feed feed = getFeed(feedType);
 
-    if (searchTokenRef.get().isFinished()) {
+    if (searchToken.isFinished()) {
       /*
        * Search is finished. Return whatever we have or none if feed is empty
        */
@@ -404,7 +432,7 @@ public class UserSearch {
                  * another job.
                  */
                 if ((!docRequest.isDone() && !signalPendingRequest())
-                    || (!searchTokenRef.get().isFinished() && docRequest.feed.getNumAvailable() < docRequest.minCnt))
+                    || (!searchToken.isFinished() && docRequest.feed.getNumAvailable() < docRequest.minCnt))
                   startFetchJob();
               }
             });
@@ -417,7 +445,7 @@ public class UserSearch {
    *          done or because we had enough documents.
    */
   private boolean signalPendingRequest() {
-    if (docRequest.feed.getNumAvailable() >= docRequest.minCnt || searchTokenRef.get().isFinished()) {
+    if (docRequest.feed.getNumAvailable() >= docRequest.minCnt || searchToken.isFinished()) {
       docRequest.future.complete(docRequest.feed.getNext(docRequest.maxCnt));
       return true;
     } else
@@ -475,52 +503,59 @@ public class UserSearch {
        */
 
       /* First step: pull 100 documents from the document source */
-      return docSrc.getNextDocuments(searchTokenRef.get(), 100)
+      return docSrc.getNextDocuments(searchToken, 100)
 
-        .thenCompose(/* List<Document> */ds -> {
-  
-          /* Save the rx documents */
-          this.docs = new ArrayList<>(ds.size());
-          for (Document d : ds)
-            this.docs.add(new FeedDocument(d));
-  
-          /*
-           * Second step: Do a preliminary document screening based on the user
-           * keywords
-           */
-          this.kwRes = classifyUsingUserKeywords(docs);
-  
-          /* Third step: Use the Idilia API to classify the remaining unknown docs */
-          List<Document> forApi = new ArrayList<>(docs.size());
-          for (int i = 0; i < docs.size(); ++i)
-            if (kwRes.get(i) == 0)
-              forApi.add(docs.get(i).getDoc());
-          return matchSvc.matchAsync(getExpressionSenses(), forApi);
-  
-        }).thenApply(/* List<Integer> */apiRes -> {
-  
-          /*
-           * Final step: Record the documents into their feed. Maintain the
-           * original order
-           */
-          int apiIdx = 0;
-          for (int docIdx = 0; docIdx < docs.size(); ++docIdx) {
-            if (kwRes.get(docIdx) < 0)
-              rejected.add(docs.get(docIdx));
-            else if (kwRes.get(docIdx) > 0)
-              matching.add(docs.get(docIdx));
-            else {
-              if (apiRes.get(apiIdx) < 0)
-                rejected.add(docs.get(docIdx));
-              else {
-                // both matching and indeterminate go to matching feed
-                matching.add(docs.get(docIdx)); 
-              }
-              ++apiIdx;
+          .thenCompose(/* List<Document> */ds -> {
+
+            /* Save the rx documents */
+            this.docs = new ArrayList<>(ds.size());
+            for (Document d : ds) {
+              if (docFilterRe != null)
+                if (!docFilterRe.matcher(d.getText()).find())
+                  continue;
+              this.docs.add(new FeedDocument(d));
             }
-          }
-          return Boolean.TRUE;
-        });
+
+            /*
+             * Second step: Do a preliminary document screening based on the
+             * user keywords
+             */
+            this.kwRes = classifyUsingUserKeywords(docs);
+
+            /*
+             * Third step: Use the Idilia API to classify the remaining unknown
+             * docs
+             */
+            List<Document> forApi = new ArrayList<>(docs.size());
+            for (int i = 0; i < docs.size(); ++i)
+              if (kwRes.get(i) == 0)
+                forApi.add(docs.get(i).getDoc());
+            return matchSvc.matchAsync(getExpressionSenses(), forApi, dbSearch.getUser().getId());
+
+          }).thenApply(/* List<Integer> */apiRes -> {
+
+            /*
+             * Final step: Record the documents into their feed. Maintain the
+             * original order
+             */
+            int apiIdx = 0;
+            for (int docIdx = 0; docIdx < docs.size(); ++docIdx) {
+              if (kwRes.get(docIdx) < 0)
+                rejected.add(docs.get(docIdx));
+              else if (kwRes.get(docIdx) > 0)
+                matching.add(docs.get(docIdx));
+              else {
+                if (apiRes.get(apiIdx) < 0)
+                  rejected.add(docs.get(docIdx));
+                else {
+                  // both matching and indeterminate go to matching feed
+                  matching.add(docs.get(docIdx));
+                }
+                ++apiIdx;
+              }
+            }
+            return Boolean.TRUE;
+          });
     }
 
     /**

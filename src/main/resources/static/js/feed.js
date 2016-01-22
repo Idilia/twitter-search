@@ -13,7 +13,10 @@
  * <li>  newKeyword, remKeyword: Finds the keyword in the displayed documents and
  *          update their status
  * </ul>
- * Sends custom events: none
+ * Sends custom events:
+ * <ul>
+ * <li>  selFeed: The selected feed. Sent whenever we toggle between KEPT/DISCARD. {type: <KEPT|DISCARD}.
+ * </ul>
  */
 
 idilia = window.idilia || {};
@@ -21,50 +24,125 @@ idilia.ts = window.idilia.ts || {};
 
 idilia.ts.feed = function() {
 
+  /**
+   * Object for a feed. We have two instances: kept, rejected
+   */
+  var Feed = {
+      
+      /** Area with the actual feed */
+      $feed : undefined,
+      
+      /** Type of feed. One of 'KEPT' or 'DISCARDED' */
+      feedType : undefined,
+      
+      /** scroll offset in window of top displayed tweet */
+      yOffset : 0,
+
+      /** true when the feed was initialized with initial content */
+      initialized : false,
+      
+      /** Constructor */
+      construct : function(type, $ctr) {
+        this.feedType = type;
+        this.$feed = $ctr;
+      },
+      
+      /** Record the current position so that we can switch */
+      recordPosition : function() {
+        this.yOffset = $(window).scrollTop();
+      },
+      
+      /** Clear the current feed */
+      clear : function() {
+        this.yOffset = 0;
+        this.initialized = undefined;
+        this.$feed.empty();
+      },
+      
+      
+      /**
+       * Helper to starting showing a feed. This activates infinite scrolling for
+       * it.
+       * 
+       * @param data
+       *          html initial content for the feed, including link for next group
+       *          of results
+       */
+      init : function(data) {
+        this.initialized = true;
+        this.$feed.html(data);
+        this.$feed.iscroll({
+          loadingHtml : '<div class="tweet-width" style="text-align:center;padding-top:10px"><img src="images/loading.gif" alt="Loading" /></div>',
+          nextSelector : 'a.feed-next',
+          contentSelector : '> *',
+          $content : this.$feed,
+          padding : 20,
+          callback : refreshStats,
+          debug : false
+        });
+      },
+      
+      start : function() {
+        this.$feed.data('iscroll').resume();
+      },
+      
+      stop : function() {
+        this.$feed.data('iscroll').pause();
+      },
+      
+      /** Start showing the feed */
+      show : function() {
+        /* Show the feed and scroll the window to last position in feed */
+        this.$feed.show();
+        $(window).scrollTop(this.yOffset);
+        this.start();
+      },
+      
+      /** Hide the feed */
+      hide : function() {
+        this.stop();
+        
+        /* Record our current position so that we can come back to it and hide the feed */
+        this.recordPosition();
+        this.$feed.hide();
+      } 
+  };
+  
+  var keptFeed = Object.create(Feed);
+  var discFeed = Object.create(Feed);
+  
+  var actFeed = 'KEPT';
+  
   /** Area with the results, feed toggle buttons */
   var $feedCtr = null;
 
-  /** Area with the actual feed */
-  var $feed = null;
-
+  var getFeed = function(ft) {
+    return actFeed == 'DISCARDED' ? discFeed : keptFeed;  
+  };
+  
   /**
    * Handler when a new search expression is being submitted or when the tagging
    * menu is open Clears all results.
    */
   var newExprEH = function(event, data) {
     $feedCtr.hide();
-    $feed.html(""); /* cancels jscroll */
     $("#feed-mgmt").hide();
+    keptFeed.clear();
+    discFeed.clear();
   };
 
   /**
    * Handler when a new feed becomes available. Start polling
    */
   var newFeedEH = function(event, data) {
-    showFeed(data);
+    keptFeed.init(data);
+    keptFeed.show();
     $feedCtr.show();
     $("button[data-feed-type=KEPT]").hide();
     $("button[data-feed-type=DISCARDED]").show();
+    $(document).trigger("selFeed", {type: 'KEPT'});
   };
 
-  /**
-   * Helper to starting showing a feed. This activates infinite scrolling for
-   * it.
-   * 
-   * @param data
-   *          html initial content for the feed, including link for next group
-   *          of results
-   */
-  var showFeed = function(data) {
-    $feed.html(data);
-    var $ctr = $("#feed-inner");
-    $ctr.jscroll({
-          padding : 20,
-          callback : refreshStats,
-          contentSelector : '.feed-next-ctr > *',
-          loadingHtml : '<div class="tweet-width" style="text-align:center;padding-top:10px"><img src="images/loading.gif" alt="Loading" /></div>'
-        });
-  };
 
   /**
    * Event handler to switch between discarded and kept document feeds
@@ -73,9 +151,22 @@ idilia.ts.feed = function() {
     /* get the feed type from the attr */
     var $ctrl = $(this);
     var feedType = $ctrl.attr("data-feed-type");
-    $.get("feed/" + feedType + "/start").done(function(data) {
-      showFeed(data);
-    });
+    
+    var othFeed = feedType == "KEPT" ? discFeed : keptFeed;
+    othFeed.hide();
+    
+    var feed = feedType == "KEPT" ? keptFeed : discFeed;
+    if (feed.initialized === true) {
+      feed.show();
+    } else {
+      $.get("feed/" + feedType + "/start").done(function(data) {
+        feed.init(data);
+        feed.show();
+      });
+    }
+    
+    this.actFeed = feed;
+    $(document).trigger("selFeed", {type: feedType});
 
     $("#feed-view-ctrls button").toggle();
     event.preventDefault();
@@ -104,7 +195,7 @@ idilia.ts.feed = function() {
     $(".results-snr").html(data['snr']);
     $("#feed-mgmt").show();
     if (kept + discarded > 0) {
-      $("#result-status").show();
+      $(".result-status").show();
     }
   };
 
@@ -127,6 +218,10 @@ idilia.ts.feed = function() {
     if (posKws !== undefined && posKws !== '\t') {
       return 1;
     } else if (negKws !== undefined && negKws !== '\t') {
+      return -1;
+    } else if ($tweet.hasClass("eval-status-keep")) {
+      return 1;
+    } else if ($tweet.hasClass("eval-status-discard")) {
       return -1;
     } else {
       return 0;
@@ -174,7 +269,7 @@ idilia.ts.feed = function() {
     var moved = 0;
     var re = new RegExp('\t' + kw + '\t', 'i');
     var attrName = kwType === 'POSITIVE' ? 'pos-kws' : 'neg-kws';
-    $(".tweet").each(function(ndx, tweet) {
+    $("#feed-containers .tweet").each(function(ndx, tweet) {
       var $tweet = $(tweet);
       var kws = $tweet.data(attrName);
       if (kws !== undefined) {
@@ -204,7 +299,7 @@ idilia.ts.feed = function() {
     var re = new RegExp('\\b' + kw + '\\b', 'im');
     var attrName = kwType === 'POSITIVE' ? 'pos-kws' : 'neg-kws';
     var moved = remKeyword(kwType === 'POSITIVE' ? 'NEGATIVE' : 'POSITIVE', kw);
-    $(".tweet").each(function(ndx, tweet) {
+    $("#feed-containers .tweet").each(function(ndx, tweet) {
       var $tweet = $(tweet);
       if (re.test($tweet.text())) {
         var kws = $tweet.data(attrName) || '\t';
@@ -254,8 +349,11 @@ idilia.ts.feed = function() {
    */
   var init = function() {
     /* our data members */
-    $feed = $("#feed");
-    $feedCtr = $("#feed-container").hide();
+    $feedCtr = $("#feed-containers").hide();
+    keptFeed = Object.create(Feed);
+    keptFeed.construct("KEPT", $("#feed-containers #feed-container-KEPT .feed").first());
+    discFeed = Object.create(Feed);
+    discFeed.construct("DISCARDED", $("#feed-containers #feed-container-DISCARDED .feed").first());
 
     /* hide areas not shown until we start displaying a feed */
     $("#feed-mgmt").hide();

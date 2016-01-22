@@ -8,6 +8,7 @@ import java.util.Map;
 import java.util.TreeMap;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.regex.Pattern;
+import java.util.stream.Collectors;
 
 /**
  * Represent a list of documents presented together. In this application, we
@@ -46,7 +47,7 @@ public class Feed {
    */
   Feed(FeedType feedType, int maxSize) {
     this.feedType = feedType;
-    docs = new TreeMap<>();
+    docs = new TreeMap<>(Collections.reverseOrder());
     numAssigned = new AtomicInteger();
     this.maxSize = maxSize;
   }
@@ -154,6 +155,23 @@ public class Feed {
         break;
     }
     return res;
+  }
+  
+  /**
+   * Traverse the document collection to attempt matching the given
+   * keyword in the text of the document. If it is found, the document
+   * is returned but not removed from the collection
+   * <p>
+   * 
+   * @param kw
+   *          Keyword to search for
+   * @return The documents removed because they contained the keyword. Ordered by id.
+   */
+  synchronized List<FeedDocument> getMatching(String kw) {
+    if (docs.isEmpty())
+      return Collections.emptyList();
+    Pattern re = Pattern.compile("\\b" + kw + "\\b", Pattern.CASE_INSENSITIVE);
+    return docs.values().stream().filter(d -> re.matcher(d.getDoc().getText()).find()).collect(Collectors.toList());
   }
 
   
