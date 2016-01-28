@@ -14,7 +14,7 @@
  * Managed elements:
  * <ul>
  * <li> form for entering the search expr: #search-query
- * <li> form for submitting the senses: #senses-form
+ * <li> form for submitting the senses (initiate search): #senses-form
  * <li> area for presenting the senses: #search-words
  * </ul>
  * 
@@ -44,7 +44,6 @@ idilia.ts.search = function() {
         view : "grid"
       },
       sensesel : function() {
-        $("#senses-form").show();
 
         /* Set the focus on the search button */
         $("#senses-form button").focus();
@@ -158,6 +157,7 @@ idilia.ts.search = function() {
    */
   var senseSelStartEH = function(event) {
     $(document).trigger("senseSelStart");
+    $("#senses-form").show();
   };
 
   /**
