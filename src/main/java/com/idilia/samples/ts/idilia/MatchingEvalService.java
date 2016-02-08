@@ -42,7 +42,7 @@ public class MatchingEvalService {
    *           thrown when encountering an error by the API call to Idilia's
    *           matching eval service
    */
-  public CompletableFuture<List<Integer>> matchAsync(List<Sense> senses,
+  public CompletableFuture<List<Double>> matchAsync(List<Sense> senses,
       final List<? extends Document> docs, UUID customerId) throws IdiliaClientException {
     if (docs.isEmpty())
       return CompletableFuture.completedFuture(Collections.emptyList());

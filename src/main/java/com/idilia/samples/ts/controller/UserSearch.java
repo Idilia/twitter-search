@@ -300,7 +300,7 @@ public class UserSearch {
 
       if (!toReclass.isEmpty()) {
         try {
-          List<Integer> res = matchSvc.matchAsync(getExpressionSenses(), toReclass, dbSearch.getUser().getId()).join();
+          List<Double> res = matchSvc.matchAsync(getExpressionSenses(), toReclass, dbSearch.getUser().getId()).join();
           for (int i = 0; i < res.size(); ++i) {
             Document d = toReclass.get(i);
             if (res.get(i) < 0)
