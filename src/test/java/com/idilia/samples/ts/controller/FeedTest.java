@@ -77,4 +77,24 @@ public class FeedTest {
     assertEquals(2, fd.getNumAvailable());
     assertEquals(3, fd.getNumAssigned());
   }
+  
+  /** Test matching of keywords with special characters and boundaries */
+  @Test
+  public void testKeywordMatching() {
+    Feed fd = new Feed(FeedType.KEPT, -1);
+    FeedDocument doc = new FeedDocument(new Tweet(1, "one (@myten) (#sick) d$r. two"));
+    fd.add(doc);
+    
+    List<FeedDocument> outDocs = fd.addUserKeyword(KeywordType.NEGATIVE, "@myten");
+    assertEquals(1, outDocs.size());
+    assertEquals(0, fd.getNumAvailable());
+    
+    fd.add(doc);
+    outDocs = fd.addUserKeyword(KeywordType.NEGATIVE, "#sick");
+    assertEquals(1, outDocs.size());
+    
+    fd.add(doc);
+    outDocs = fd.addUserKeyword(KeywordType.NEGATIVE, "d$r.");
+    assertEquals(1, outDocs.size());
+  }
 }

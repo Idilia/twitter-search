@@ -55,11 +55,16 @@ public class Keywords {
       return null;
 
     StringBuilder sb = new StringBuilder(keywords.size() * 10);
-    sb.append("\\b(");
-    for (String kw : keywords)
-      sb.append(kw).append('|');
-    sb.setLength(sb.length() - 1);
-    sb.append(")\\b");
+    sb.append("(");
+    for (String kw : keywords) {
+      if (Character.isAlphabetic(kw.charAt(0)))
+        sb.append("\\b");
+      sb.append(Pattern.quote(kw));
+      if (Character.isAlphabetic(kw.charAt(kw.length() - 1)))
+        sb.append("\\b");
+      sb.append("|");
+    }
+    sb.setCharAt(sb.length() - 1, ')');
     re = Pattern.compile(sb.toString(), Pattern.CASE_INSENSITIVE);
     reRef.set(re);
     return re;

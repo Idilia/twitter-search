@@ -170,7 +170,7 @@ public class Feed {
   synchronized List<FeedDocument> getMatching(String kw) {
     if (docs.isEmpty())
       return Collections.emptyList();
-    Pattern re = Pattern.compile("\\b" + kw + "\\b", Pattern.CASE_INSENSITIVE);
+    Pattern re = getKeywordRe(kw);
     return docs.values().stream().filter(d -> re.matcher(d.getDoc().getText()).find()).collect(Collectors.toList());
   }
 
@@ -192,7 +192,7 @@ public class Feed {
     if (docs.isEmpty())
       return Collections.emptyList();
     List<FeedDocument> toMove = new ArrayList<>();
-    Pattern re = Pattern.compile("\\b" + kw + "\\b", Pattern.CASE_INSENSITIVE);
+    Pattern re = getKeywordRe(kw);
     for (Iterator<Map.Entry<String, FeedDocument>> docIt = docs.entrySet()
         .iterator(); docIt.hasNext();) {
       
@@ -211,6 +211,23 @@ public class Feed {
     
     numAssigned.addAndGet(toMove.size() * -1);
     return toMove;
+  }
+  
+  
+  /**
+   * Helper function to generate a regular expression for matching
+   * the given keyword
+   * @param kw string of the keyword to match
+   * @return a regex that will match the keyword on word boundaries, case insensitive
+   */
+  private static Pattern getKeywordRe(String kw) {
+    StringBuilder sb = new StringBuilder();
+    if (Character.isAlphabetic(kw.charAt(0)))
+      sb.append("\\b");
+    sb.append(Pattern.quote(kw));
+    if (Character.isAlphabetic(kw.charAt(kw.length() - 1)))
+      sb.append("\\b");
+    return Pattern.compile(sb.toString(), Pattern.CASE_INSENSITIVE);
   }
   
 

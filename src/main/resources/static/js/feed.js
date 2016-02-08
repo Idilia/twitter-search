@@ -296,7 +296,8 @@ idilia.ts.feed = function() {
    */
   var newKeyword = function(kwType, kw) {
     
-    var re = new RegExp('\\b' + kw + '\\b', 'im');
+    var reS = (/^\w/.test(kw) ? "\\b" : "") + kw.replace(/([$'()[{|?+*\.^])/g, "\\$1") + (/\w$/.test(kw) ? "\\b" : ""); 
+    var re = new RegExp(reS, 'im');
     var attrName = kwType === 'POSITIVE' ? 'pos-kws' : 'neg-kws';
     var moved = remKeyword(kwType === 'POSITIVE' ? 'NEGATIVE' : 'POSITIVE', kw);
     $("#feed-containers .tweet").each(function(ndx, tweet) {
@@ -350,9 +351,7 @@ idilia.ts.feed = function() {
   var init = function() {
     /* our data members */
     $feedCtr = $("#feed-containers").hide();
-    keptFeed = Object.create(Feed);
     keptFeed.construct("KEPT", $("#feed-containers #feed-container-KEPT .feed").first());
-    discFeed = Object.create(Feed);
     discFeed.construct("DISCARDED", $("#feed-containers #feed-container-DISCARDED .feed").first());
 
     /* hide areas not shown until we start displaying a feed */

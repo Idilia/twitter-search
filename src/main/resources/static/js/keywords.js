@@ -72,7 +72,8 @@ idilia.ts.keywords = function() {
       $kwFeed.empty();
       
       /* Add the tweets from the active feed that matches */
-      var re = new RegExp('\\b' + keyword + '\\b', 'im');
+      var reS = (/^\w/.test(keyword) ? "\\b" : "") + keyword.replace(/([$'()[{|?+*\.^])/g, "\\$1") + (/\w$/.test(keyword) ? "\\b" : ""); 
+      var re = new RegExp(reS, 'im');
       var $actFeed = $("#feed-container-" + feedType + " .feed");
       $actFeed.find(".tweet-ctr").each(function (ndx, twCtr) {
         var $twCtr = $(twCtr);

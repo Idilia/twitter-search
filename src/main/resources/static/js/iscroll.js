@@ -209,13 +209,13 @@
 
     /** 
      * The jQuery element in which data is added. Shown in the viewport.
-     *  Must be specified.
+     * Must be specified.
      */
     $content : undefined,
 
     /**
      * The jQuery element that is scrollable. Normally $(window) but it can
-     * base a scrollable parent of $content
+     * be a scrollable parent of $content
      */
     $viewport : $(window),
 
