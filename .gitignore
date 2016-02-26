@@ -3,5 +3,6 @@
 /target
 /.settings
 /src/main/resources/static/lib
+/src/main/resources/twitter_oauth_keys.json
 /node
 /node_modules

@@ -20,8 +20,7 @@ public class Keywords {
    * concurrent structure because we can be using when classifying while its
    * being edited by the user.
    */
-  final private ConcurrentSkipListSet<String> keywords = 
-      new ConcurrentSkipListSet<>(String.CASE_INSENSITIVE_ORDER);
+  final private ConcurrentSkipListSet<String> keywords = new ConcurrentSkipListSet<>(String.CASE_INSENSITIVE_ORDER);
 
   /**
    * Regular expression to match any of the keywords. Constructed on demand and
@@ -75,8 +74,7 @@ public class Keywords {
    * <p>
    * Obsoletes the cached regular expression if needed.
    * 
-   * @param kws
-   *          a collection of keywords to add
+   * @param kws a collection of keywords to add
    * @return true when a new keyword was inserted into the collection
    */
   public boolean addAll(Collection<String> kws) {
@@ -91,8 +89,7 @@ public class Keywords {
    * <p>
    * Obsoletes the cached regular expression if needed.
    * 
-   * @param kw
-   *          a keyword to add
+   * @param kw a keyword to add
    * @return true when the keyword was inserted into the collection
    */
   public boolean add(String kw) {
@@ -105,8 +102,7 @@ public class Keywords {
   /**
    * Attempt to remove the given keyword from the collection.
    * 
-   * @param kw
-   *          keyword to remove
+   * @param kw keyword to remove
    * @return true when the keyword was present and has been removed.
    */
   public boolean remove(String kw) {
@@ -129,8 +125,7 @@ public class Keywords {
    * order (case insensitive) where all values are greater or equal to the given
    * kw. This can be used to implement pageing.
    * 
-   * @param kw
-   *          lower bound value for the keywords returned.
+   * @param kw lower bound value for the keywords returned.
    * @return a alphabetical set of keywords with the lower value equal or
    *         greater than 'kw'.
    */

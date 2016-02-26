@@ -146,6 +146,11 @@ input#search-query.form-control {
 	min-height: 200px;
 }
 
+#adv-search-fields {
+ margin-top: 20px;
+ margin-right: 40px;
+}
+
 .tt-suggestion {
 	display: block;
 	padding: 3px 20px;
@@ -215,4 +220,13 @@ input#search-query.form-control {
 	width: 200px;
 	float: left;	
 }
-​​
+
+.dropdown.open .btn .caret {
+ content: "";
+ border-top: 0;
+ border-bottom: 4px dashed;
+ border-bottom: 4px solid \9;
+}
+.dropdown-menu {
+ padding: 5px;
+}

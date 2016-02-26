@@ -2,16 +2,16 @@ package com.idilia.samples.ts.twitter;
 
 import java.io.Closeable;
 import java.io.IOException;
-import java.io.UnsupportedEncodingException;
-import java.net.URLEncoder;
-import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
+import java.util.stream.Collectors;
 
 import org.apache.http.HttpResponse;
 import org.apache.http.client.config.RequestConfig;
@@ -39,33 +39,41 @@ public class TwitterHttpAsyncClient implements Closeable {
 
   @SuppressWarnings("serial")
   public static class TwitterClientException extends RuntimeException {
-    TwitterClientException() {}
-    TwitterClientException(String msg) { super(msg); }
-    TwitterClientException(Throwable t) { super(t); }
+    TwitterClientException() {
+    }
+
+    TwitterClientException(String msg) {
+      super(msg);
+    }
+
+    TwitterClientException(Throwable t) {
+      super(t);
+    }
   }
-  
+
   @SuppressWarnings("serial")
   public static class TwitterRateLimitingException extends TwitterClientException {
-    TwitterRateLimitingException() { }
+    TwitterRateLimitingException() {
+    }
   }
-  
+
   /** Apache HTTP async client */
-  private final CloseableHttpAsyncClient httpClient_ ;
-  
+  private final CloseableHttpAsyncClient httpClient_;
+
   /** Thread object cleaning up the HTTP expired connections */
   private final IdleConnectionEvictor connEvictor_;
-  
+
   /** OAuth consumer used to sign the requests */
-  private final OAuthConsumer oauthConsumer;
-  
+  private ArrayBlockingQueue<OAuthConsumer> oauthConsumers;
+
   private final ObjectMapper jsonMapper_ = new ObjectMapper();
-  
+
   /**
    * Constructor. Configure an async Apache HTTP client with default parameters
    * except provide default timeouts to make sure we eventually timeout.
    */
-  TwitterHttpAsyncClient(OAuthCredentials creds) {
-    
+  TwitterHttpAsyncClient() {
+
     /* Initialize the Http async client */
     ConnectingIOReactor ioReactor;
     try {
@@ -73,34 +81,53 @@ public class TwitterHttpAsyncClient implements Closeable {
     } catch (IOReactorException e) {
       throw new TwitterClientException(e);
     }
-    
+
     final int maxConns = 100;
     PoolingNHttpClientConnectionManager cm = new PoolingNHttpClientConnectionManager(ioReactor);
     cm.setMaxTotal(maxConns);
-    
+
     final int maxConnectTimeMs = 60 * 1000;
     RequestConfig requestConfig = RequestConfig.custom()
         .setSocketTimeout(maxConnectTimeMs)
         .setConnectTimeout(maxConnectTimeMs).build();
-    
+
     httpClient_ = HttpAsyncClients.custom()
         .setConnectionManager(cm)
         .setDefaultRequestConfig(requestConfig)
         .build();
-    
+
     httpClient_.start();
-    
-    
+
     /* Initialize the evictor for old connections */
     connEvictor_ = new IdleConnectionEvictor(cm);
     connEvictor_.start();
-    
-    
-    /* Initialize OAuth. */
-    oauthConsumer = new CommonsHttpOAuthConsumer(creds.consumerKey, creds.consumerSecret); 
-    oauthConsumer.setTokenWithSecret(creds.token, creds.tokenSecret);
   }
-  
+
+  /**
+   * Constructor. Configure an async Apache HTTP client with default parameters
+   * except provide default timeouts to make sure we eventually timeout.
+   */
+  TwitterHttpAsyncClient(Collection<OAuthCredentials> creds) {
+    this();
+
+    /* Initialize OAuth. */
+    List<OAuthConsumer> consumers = creds.stream().map(cred -> {
+      OAuthConsumer oauthConsumer = new CommonsHttpOAuthConsumer(cred.consumerKey, cred.consumerSecret);
+      oauthConsumer.setTokenWithSecret(cred.token, cred.tokenSecret);
+      return oauthConsumer;
+    }).collect(Collectors.toList());
+
+    oauthConsumers = new ArrayBlockingQueue<>(consumers.size(), false, consumers);
+  }
+
+  /**
+   * Constructor. Configure an async Apache HTTP client with default parameters
+   * except provide default timeouts to make sure we eventually timeout.
+   */
+  TwitterHttpAsyncClient(OAuthCredentials creds) {
+    this(Collections.singletonList(creds));
+  }
+
   @Override
   public void close() throws IOException {
     connEvictor_.shutdown();
@@ -113,51 +140,66 @@ public class TwitterHttpAsyncClient implements Closeable {
 
   /**
    * Perform a search using the Twitter API
-   * @param searchToken provides the query to use. And is updated for the next query.
+   * 
+   * @param searchToken provides the query to use. And is updated for the next
+   *        query.
    * @param cnt maximum number of documents to retrieve
-   * @throws TwitterClientException on any error
+   * @throws TwitterRateLimitingException if encountering a rate limit error
+   *         with the API
+   * @throws TwitterClientException on any other error
    */
-  CompletableFuture<List<? extends Document>> search(final TwitterSearchToken searchToken, int cnt) throws TwitterClientException {
-  
+  CompletableFuture<List<? extends Document>> search(final TwitterSearchToken searchToken, int cnt)
+      throws TwitterClientException {
+
     StringBuilder qrySb = new StringBuilder(256);
     qrySb.append("https://api.twitter.com/1.1/search/tweets.json");
     if (searchToken.getNextResults() != null)
       qrySb.append(searchToken.getNextResults());
     else {
-      qrySb.append("?q=");
-      try {
-        qrySb.append(URLEncoder.encode(searchToken.getExp(), StandardCharsets.UTF_8.toString()));
-      } catch (UnsupportedEncodingException e) {
-      }
+      qrySb.append(searchToken.getFirstResults());
       qrySb.append("&count=").append(cnt);
-      qrySb.append("&include_entities=false&lang=en&result_type=recent");
       if (searchToken.getMaxId() != null)
         qrySb.append("&max_id=").append(searchToken.getMaxId() - 1);
     }
-    
+
     final CompletableFuture<List<? extends Document>> future = new CompletableFuture<>();
     HttpGet httpGet = new HttpGet(qrySb.toString());
+
+    /* Get a signing token */
+    OAuthConsumer oauthConsumer = null;
+    try {
+      oauthConsumer = oauthConsumers.take();
+    } catch (InterruptedException e) {
+      throw new TwitterClientException(e);
+    }
+
+    /* Sign the request and requeue the signing token */
     try {
       oauthConsumer.sign(httpGet);
     } catch (OAuthException e) {
       throw new TwitterClientException(e);
+    } finally {
+      oauthConsumers.add(oauthConsumer);
     }
 
     HttpClientContext ctxt = HttpClientContext.create();
     httpClient_.execute(httpGet, ctxt, new FutureCallback<HttpResponse>() {
-      
+
       @SuppressWarnings("unchecked")
       @Override
       public void completed(final HttpResponse response) {
-        if (response.getFirstHeader("Content-Type").getValue().contains("json")) {
+        String ct = response.getFirstHeader("Content-Type").getValue();
+        if (ct.contains("json")) {
           try {
             BufferedHttpEntity bRxEntity = new BufferedHttpEntity(response.getEntity());
-            Map<String, Object> msgResp = jsonMapper_.readValue(bRxEntity.getContent(), new TypeReference<Map<String, Object>>() {});
-            
+            Map<String, Object> msgResp = jsonMapper_.readValue(bRxEntity.getContent(),
+                new TypeReference<Map<String, Object>>() {
+            });
+
             /* Read errors if any and when some, stop with exception */
             if (msgResp.get("errors") != null) {
               Object o = ((List<Object>) msgResp.get("errors")).get(0);
-              LinkedHashMap<String,Object> cv = (LinkedHashMap<String,Object>) o;
+              LinkedHashMap<String, Object> cv = (LinkedHashMap<String, Object>) o;
               Integer code = (Integer) cv.get("code");
               String msg = (String) cv.get("message");
               if (code == 88)
@@ -166,38 +208,44 @@ public class TwitterHttpAsyncClient implements Closeable {
                 future.completeExceptionally(new TwitterClientException(
                     String.format("Twitter API error: %d, %s", code, msg)));
             }
-            
-            /* Read the link for the next results. It is not always available
-             * so we have a fallback to the max_id parameter. */
-            LinkedHashMap<String,Object> metaData = 
-                (LinkedHashMap<String,Object>) msgResp.get("search_metadata");
-            if (metaData != null)
-              searchToken.setNextResults((String) metaData.get("next_results"));
-            
+
             /* Read the tweets returned */
             List<Object> apiTweets = (List<Object>) msgResp.get("statuses");
+            List<Tweet> tweets = Collections.emptyList();
             if (apiTweets != null) {
-              List<Tweet> tweets = new ArrayList<>(apiTweets.size());
-              for (Object o: apiTweets) {
-                LinkedHashMap<String,Object> cv = (LinkedHashMap<String,Object>) o;
+              tweets = new ArrayList<>(apiTweets.size());
+              for (Object o : apiTweets) {
+                LinkedHashMap<String, Object> cv = (LinkedHashMap<String, Object>) o;
                 Tweet t = new Tweet(cv);
                 searchToken.setMaxId(t.getNumericId());
                 tweets.add(new Tweet(cv));
               }
-              future.complete(tweets);
-            } else
-              future.complete(Collections.emptyList());
-            
+            }
+
+            /*
+             * Read the link for the next results. It is not always available so
+             * we have a fallback to the max_id parameter when were able to read
+             * tweets.
+             */
+            LinkedHashMap<String, Object> metaData = (LinkedHashMap<String, Object>) msgResp.get("search_metadata");
+            String nextRes = metaData != null ? (String) metaData.get("next_results") : null;
+            if (tweets.isEmpty() && (nextRes == null || nextRes.equals(searchToken.getNextResults())))
+              searchToken.setFinished();
+            else
+              searchToken.setNextResults(nextRes);
+
+            future.complete(tweets);
+
           } catch (Exception e) {
             searchToken.setFinished();
             future.completeExceptionally(new TwitterClientException(e));
           }
         } else {
           searchToken.setFinished();
-          future.completeExceptionally(new TwitterClientException("Unexpected content type in response"));
+          future.completeExceptionally(new TwitterClientException("Unexpected content type in response:" + ct));
         }
       }
-      
+
       @Override
       public void failed(final Exception ex) {
         searchToken.setFinished();
@@ -209,30 +257,29 @@ public class TwitterHttpAsyncClient implements Closeable {
         searchToken.setFinished();
         future.cancel(false);
       }
-      
+
     });
     return future;
   }
-  
+
   /**
-   * A thread that periodically removes expired connections from the connection pool.
-   * This is straight from an example in
+   * A thread that periodically removes expired connections from the connection
+   * pool. This is straight from an example in
    * https://hc.apache.org/httpcomponents-asyncclient-dev/examples.html
    */
   static class IdleConnectionEvictor extends Thread {
-    
+
     /** The connection manager used by the async client */
     private final NHttpClientConnectionManager connMgr;
-    
+
     /** Set to true when time to stop */
     private volatile boolean shutdown;
 
-    
     public IdleConnectionEvictor(NHttpClientConnectionManager connMgr) {
       super();
       this.connMgr = connMgr;
     };
-    
+
     @Override
     public void run() {
       try {
@@ -247,7 +294,7 @@ public class TwitterHttpAsyncClient implements Closeable {
       } finally {
       }
     }
-    
+
     public void shutdown() {
       shutdown = true;
       synchronized (this) {

@@ -22,10 +22,10 @@ public class SearchRepositoryTest {
   UserRepository userRepo;
   
   @Autowired
-  SearchRepository searchRepo;
+  DbSearchRepository searchRepo;
   
   @Autowired
-  SearchDbService searchSvc;
+  DbSearchService searchSvc;
   
   @Test
   public void testCreate() {
@@ -35,28 +35,28 @@ public class SearchRepositoryTest {
     u.setIsNew(false);
 
     List<Sense> senses = Collections.singletonList(new Sense(0, 1, "text", "text/N1"));
-    Search s = new Search(u, "one");
+    DbSearch s = new DbSearch(u, "one");
     s.setSenses(senses);
     searchSvc.save(s);
     
-    s = new Search(u, "two");
+    s = new DbSearch(u, "two");
     s.setSenses(senses);
     searchSvc.save(s);
    
-    s = new Search(u, "three");
+    s = new DbSearch(u, "three");
     s.setSenses(senses);
     searchSvc.save(s);
     
     // Search by user and expression
     {
-      List<Search> searches = searchRepo.findByUserAndExpression(u, "two");
+      List<DbSearch> searches = searchRepo.findByUserAndExpression(u, "two");
       assertEquals(1, searches.size());
       assertEquals("two", searches.get(0).getExpression());
     }
     
     // Search by expression for any user
     {
-      List<Search> searches = searchRepo.findByExpression("two");
+      List<DbSearch> searches = searchRepo.findByExpression("two");
       assertEquals(1, searches.size());
       assertEquals("two", searches.get(0).getExpression());
     }

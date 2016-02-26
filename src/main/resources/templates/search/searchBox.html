@@ -1,31 +1,174 @@
 <!DOCTYPE html>
-<html xmlns="http://www.w3.org/1999/xhtml"
- xmlns:th="http://www.thymeleaf.org">
+<html xmlns="http://www.w3.org/1999/xhtml" xmlns:th="http://www.thymeleaf.org">
 <body>
 
  <div th:fragment="content">
 
   <!--/* 
    This is the fragment for displaying the search box. It pulls from the
-   model the object userSearch of type UserSearch to retrieve the current
-   value of the search expression.
+   model the object searchForm of type SearchForm.
  */-->
 
   <div role="search" id="query">
-   <form th:action="@{/search}" id="search-form" class="form-inline">
+   <form th:action="@{/search}" id="search-form">
 
-    <div class="input-group">
-     <input class="typeahead form-control" type="text" id="search-query" 
-      placeholder="Enter search text" name="q" autocomplete="off"
-      lang="en" spellcheck="true" size="40" required="required"
-      th:value="${userSearch.getExpression()}" aria-autocomplete="list"
-      aria-expanded="false" aria-owns="typeahead-dropdown-1" /> <span
-      class="input-group-btn">
-      <button class="btn btn-primary" id="search-button" type="submit">
-       <span class="glyphicon glyphicon-search"></span>
+    <div class="form-inline">
+
+     <div class="input-group">
+      <input class="typeahead form-control" type="text" id="search-query" placeholder="Enter search text" autocomplete="off" lang="en" spellcheck="true" size="40"
+       required="required" th:field="*{searchForm.query}" th:value="${searchForm.query}" aria-autocomplete="list" aria-expanded="false" aria-owns="typeahead-dropdown-1" />
+      <div class="input-group-btn">
+       <button class="btn btn-primary" id="search-button" type="submit">
+        <span class="glyphicon glyphicon-search"></span>
+       </button>
+      </div>
+     </div>
+
+     <div class="form-group">
+      <button class="btn btn-default form-control" id="adv-search-button">
+       Advanced Search <span class="caret"></span>
       </button>
-     </span>
+     </div>
+
+     <div class="btn-group dropdown">
+      <button class="btn btn-default dropdown-toggle" id="opts-search-button" data-toggle="dropdown">
+        <span class="glyphicon glyphicon-cog"></span> Filtering Options <span class="caret"></span>
+      </button>
+      <ul class="dropdown-menu">
+       <li>
+         <label class="checkbox-inline"> 
+          <input class="" type="checkbox" th:field="*{searchForm.discardInconclusive}" th:checked="${searchForm.discardInconclusive}"></input>
+          Discard when inconclusive
+         </label>
+        </li>
+       <li>
+         <label class="checkbox-inline"> 
+          <input class="" type="checkbox" disabled="disabled" th:field="*{searchForm.rejectedOnMissingWords}" th:checked="${searchForm.rejectedOnMissingWords}"></input>
+          Discard when missing words
+         </label>
+        </li>
+      </ul>
+     </div>
     </div>
+
+
+    <!--  /* Advanced search fields  */-->
+
+    <div class="well well-lg form-horizontal" id="adv-search-fields" style="display: none;">
+
+     <h2 style="text-align:center;">Advanced Search</h2>
+     
+     <fieldset id="adv-search-words">
+     
+      <div class="row"><div class="col-sm-3"><h3 class="pull-right">Words</h3></div></div>
+      
+      <div class="form-group">
+       <label class="control-label col-sm-3">All of these words</label>
+       <div class="col-sm-7">
+        <input type="text" lang="en" spellcheck="true" th:field="*{searchForm.allWords}" th:value="${searchForm.allWords}" class="form-control" />
+       </div>
+      </div>
+
+      <div class="form-group">
+       <label class="control-label col-sm-3">This exact phrase</label>
+       <div class="col-sm-7">
+        <input type="text" lang="en" spellcheck="true" th:field="*{searchForm.phrase}" th:value="${searchForm.phrase}" class="form-control" />
+       </div>
+      </div>
+
+      <div class="form-group">
+       <label class="control-label col-sm-3">Any of these words</label>
+       <div class="col-sm-7">
+        <input type="text" lang="en" spellcheck="true" th:field="*{searchForm.anyWords}" th:value="${searchForm.anyWords}" class="form-control" />
+       </div>
+      </div>
+
+      <div class="form-group">
+       <label class="control-label col-sm-3">None of these words</label>
+       <div class="col-sm-7">
+        <input type="text" lang="en" spellcheck="true" th:field="*{searchForm.noneWords}" th:value="${searchForm.noneWords}" class="form-control" />
+       </div>
+      </div>
+
+      <div class="form-group">
+       <label class="control-label col-sm-3">These hashtags</label>
+       <div class="col-sm-7">
+        <input type="text" th:field="*{searchForm.hashTags}" th:value="${searchForm.hashTags}" class="form-control" />
+       </div>
+      </div>
+
+     </fieldset>
+
+
+     <fieldset>
+      <div class="row"><div class="col-sm-3"><h3 class="pull-right">People</h3></div></div>
+
+      <div class="form-group">
+       <label class="control-label col-sm-3">From these accounts</label>
+       <div class="col-sm-7">
+        <input type="text" name="fromAccounts" th:value="${searchForm.getFromAccountsAsString()}" class="form-control" />
+       </div>
+      </div>
+
+      <div class="form-group">
+       <label class="control-label col-sm-3">To these accounts</label>
+       <div class="col-sm-7">
+        <input type="text" name="toAccounts" th:value="${searchForm.getToAccountsAsString()}" class="form-control" />
+       </div>
+      </div>
+
+      <div class="form-group">
+       <label class="control-label col-sm-3">Mentionning these accounts</label>
+       <div class="col-sm-7">
+        <input type="text" name="referredAccounts" th:value="${searchForm.getReferredAccountsAsString()}" class="form-control" />
+       </div>
+      </div>
+
+     </fieldset>
+
+
+     <fieldset>
+      <div class="row"><div class="col-sm-3"><h3 class="pull-right">Dates</h3></div></div>
+
+      <div class="form-group">
+       <label class="control-label col-sm-3">From this date</label>
+       <div class="col-sm-7">
+        <div class="form-inline">
+         <input type="date" name="fromDate" th:max="${#dates.format(#dates.createToday(),'yyyy-MM-dd')}" th:value="${searchForm.getFromDateAsString()}" class="form-control" />
+         <label class="control-label"> to </label>
+         <input type="date" name="toDate" th:max="${#dates.format(#dates.createToday(),'yyyy-MM-dd')}" th:value="${searchForm.getToDateAsString()}" class="form-control" />
+        </div>
+       </div>
+      </div>
+
+
+     </fieldset>
+
+     <fieldset>
+      <div class="row"><div class="col-sm-3"><h3 class="pull-right">Other</h3></div></div>
+      <div class="form-group">
+       <label class="control-label col-sm-3">Select</label>
+       <div class="col-sm-7">
+
+        <label class="checkbox-inline"> 
+         <input type="checkbox" th:field="*{searchForm.positive}" th:value="${searchForm.positive}"></input> Positive :)
+        </label> 
+        <label class="checkbox-inline"> 
+         <input type="checkbox" th:field="*{searchForm.negative}" th:value="${searchForm.negative}"></input> Negative :()</label>
+        <label class="checkbox-inline">
+         <input type="checkbox" th:field="*{searchForm.question}" th:value="${searchForm.question}"></input> Question ?
+        </label>
+        <label class="checkbox-inline"> 
+         <input type="checkbox" th:field="*{searchForm.includeRetweets}" th:value="${searchForm.includeRetweets}"></input> Include retweets
+        </label>
+
+       </div>
+      </div>
+     </fieldset>
+
+     <div style="padding-top:10px;text-align:center;"> <button  class="btn btn-primary" id="adv-search-submit" type="submit">Submit</button></div>
+    </div> <!--/* advance search */-->
+    
    </form>
   </div>
 

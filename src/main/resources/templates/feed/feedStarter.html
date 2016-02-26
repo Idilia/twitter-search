@@ -7,6 +7,13 @@
   <!--/* Result Status and button to show kept/discard */-->
   <div class="tweet-width">
 
+  <!--/* Feedback on the meaning of words */-->
+  <div th:if="${msg}">
+    <div class="alert" th:classappend="${classAppend}">
+     <p th:text="${msg}">Meanings not used</p>
+    </div>
+  </div>
+  
    <!--/* Kept Results */-->
    <p class="result-status" th:if="${isKept}">
     <strong>Kept <span class="nb-kept-results">0</span> of <span

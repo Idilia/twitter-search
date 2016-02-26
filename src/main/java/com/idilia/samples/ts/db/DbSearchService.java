@@ -4,17 +4,16 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 @Service
-public class SearchDbService {
+public class DbSearchService {
 
-  @Autowired 
-  private SearchRepository searchRepo;
+  @Autowired
+  private DbSearchRepository searchRepo;
 
-  
-  public SearchRepository getRepo() {
+  public DbSearchRepository getRepo() {
     return searchRepo;
   }
-  
-  public Search save(Search s) {
+
+  public DbSearch save(DbSearch s) {
     s.setRanAt();
     return searchRepo.save(s);
   }

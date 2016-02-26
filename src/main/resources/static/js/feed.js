@@ -213,15 +213,15 @@ idilia.ts.feed = function() {
    * @return int < 0 for discarding, > 0 for keeping, 0 when can't tell
    */
   var caclClassification = function($tweet) {
-    var posKws = $tweet.data("pos-kws");
-    var negKws = $tweet.data("neg-kws");
-    if (posKws !== undefined && posKws !== '\t') {
+    var posKws = $tweet.data("pos-kws") || '\t';
+    var negKws = $tweet.data("neg-kws") || '\t';
+    if (posKws !== '\t') {
       return 1;
-    } else if (negKws !== undefined && negKws !== '\t') {
+    } else if (negKws !== '\t') {
       return -1;
-    } else if ($tweet.hasClass("eval-status-keep")) {
+    } else if ($tweet.hasClass("eval-keep")) {
       return 1;
-    } else if ($tweet.hasClass("eval-status-discard")) {
+    } else if ($tweet.hasClass("eval-discard")) {
       return -1;
     } else {
       return 0;
@@ -373,8 +373,18 @@ idilia.ts.feed = function() {
         var $icon = $(this);
         var $tweet = $icon.closest(".tweet");
         var cls = $tweet.attr('class').match(/status-\w+\b/)[0];
-        var id = '#' + cls + '-popup';
-        return $(id).html();
+        var posKw = $tweet.data('pos-kws') || '\t';
+        var negKw = $tweet.data('neg-kws') || '\t';
+        if (posKw !== '\t' || negKw !== '\t')  {
+          cls = cls + '-kw';
+        }
+        var $id = $('#' + cls + '-popup');
+        if (posKw !== '\t') {
+          $id.find('.words').html(posKw.trim().replace('\t', ', '));
+        } else if (negKw != '\t') {
+          $id.find('.words').html(negKw.trim().replace('\t', ', '));
+        }
+        return $id.html();
       }
     });
 

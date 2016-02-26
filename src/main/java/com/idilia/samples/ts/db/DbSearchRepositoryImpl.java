@@ -9,11 +9,11 @@ import javax.persistence.TypedQuery;
 /**
  * Implementation for the non-Spring functions in the SearchRepository
  */
-public class SearchRepositoryImpl implements SearchRepositoryCustom {
+public class DbSearchRepositoryImpl implements DbSearchRepositoryCustom {
 
   @PersistenceContext
   private EntityManager em;
-  
+
   @Override
   public List<SearchExpr> findRecentExpressions(User user, int cnt) {
     // Create a typed query from the named query defined at with the table

@@ -97,4 +97,30 @@ public class FeedTest {
     outDocs = fd.addUserKeyword(KeywordType.NEGATIVE, "d$r.");
     assertEquals(1, outDocs.size());
   }
+  
+  /** Test that adding a user keyword changes the status */
+  @Test
+  public void testDocumentStatus() {
+    // Do once for a kept feed
+    {
+      Feed feed = new Feed(FeedType.KEPT, -1);
+      FeedDocument fd = new FeedDocument(new Tweet(1, "document one"));
+      feed.add(fd);
+      assertEquals(FeedDocument.Status.INCONCLUSIVE, fd.getStatus());
+      List<FeedDocument> outDocs = feed.addUserKeyword(KeywordType.POSITIVE, "one");
+      assertEquals(0, outDocs.size());
+      assertEquals(FeedDocument.Status.USER_KW_KEPT, fd.getStatus());
+    }
+    
+    // Repeat for a discard feed
+    {
+      Feed feed = new Feed(FeedType.DISCARDED, -1);
+      FeedDocument fd = new FeedDocument(new Tweet(1, "document one"));
+      feed.add(fd);
+      assertEquals(FeedDocument.Status.INCONCLUSIVE, fd.getStatus());
+      List<FeedDocument> outDocs = feed.addUserKeyword(KeywordType.NEGATIVE, "one");
+      assertEquals(0, outDocs.size());
+      assertEquals(FeedDocument.Status.USER_KW_REJECTED, fd.getStatus());
+    }
+  }
 }

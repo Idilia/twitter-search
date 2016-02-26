@@ -15,6 +15,7 @@ import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 
 import com.idilia.samples.ts.config.Beans;
 import com.idilia.samples.ts.twitter.Tweet;
+import com.idilia.services.text.MatchingEvalResponse;
 import com.idilia.tagging.Sense;
 
 @RunWith(SpringJUnit4ClassRunner.class)
@@ -32,9 +33,9 @@ public class DocMatchingServiceTest {
     tweets.add(new Tweet(1, "tide"));
     tweets.add(new Tweet(2, "The tide was high when he was at the beach"));
     List<Sense> senses = Collections.singletonList(new Sense(0, 1, "tide", "Tide/N8"));
-    List<Double> docRes = matchingSvc.matchAsync(senses, tweets, customerId).join();
+    MatchingEvalResponse apiResp = matchingSvc.matchAsync(senses, tweets, customerId).join();
     Double docResA[] = new Double[3];
-    assertArrayEquals(new Double[]{1.0,0.0,-1.0}, docRes.toArray(docResA));
+    assertArrayEquals(new Double[]{1.0,0.0,-1.0}, apiResp.getResult().toArray(docResA));
   }
   
 

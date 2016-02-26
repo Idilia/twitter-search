@@ -15,7 +15,7 @@
 
   <div th:each="doc: ${docs}" th:with="tweet=${doc.getDoc()}" class="tweet-ctr tweet-width">
    <div class="tweet" 
-     th:classappend="${doc.getStatusClasses(isKept)}"
+     th:classappend="${doc.getStatusClasses()}"
      th:attr="data-tweet-id=${tweet.getId()}, data-pos-kws=${doc.getPositiveKeywordsStr()}, data-neg-kws=${doc.getNegativeKeywordsStr()}">
 
     <!--/* Status icon: kept or discarded */-->

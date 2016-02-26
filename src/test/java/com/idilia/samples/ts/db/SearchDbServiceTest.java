@@ -23,7 +23,7 @@ public class SearchDbServiceTest {
   UserRepository userRepo;
   
   @Autowired
-  SearchDbService searchSvc;
+  DbSearchService searchSvc;
   
   @Test
   public void testCreate() {
@@ -31,12 +31,12 @@ public class SearchDbServiceTest {
     u = userRepo.save(u);
     u.setIsNew(false);
     
-    Search s = new Search(u, "apple");
+    DbSearch s = new DbSearch(u, "apple");
     s.setSenses(Collections.singletonList(new Sense(0, 1, "apple", "Apple/N8")));
-    Search s2 = searchSvc.save(s);
+    DbSearch s2 = searchSvc.save(s);
     assertNotNull(s2.getSenses());
     
-    Search s3 = searchSvc.getRepo().findOne(s2.getId());
+    DbSearch s3 = searchSvc.getRepo().findOne(s2.getId());
     assertEquals(s2, s3);
     assertNotNull(s3.getSenses());
   }
@@ -48,11 +48,11 @@ public class SearchDbServiceTest {
     u = userRepo.save(u);
     u.setIsNew(false);
     
-    Search s = new Search(u, "apple");
+    DbSearch s = new DbSearch(u, "apple");
     s = searchSvc.save(s);
     assertNotNull(s.getId());
     
-    Search s2 = searchSvc.getRepo().findOne(s.getId());
+    DbSearch s2 = searchSvc.getRepo().findOne(s.getId());
     assertEquals(s.getExpression(), s2.getExpression());
     
     s.setSenses(Collections.singletonList(new Sense(0, 1, "apple", "Apple/N8")));

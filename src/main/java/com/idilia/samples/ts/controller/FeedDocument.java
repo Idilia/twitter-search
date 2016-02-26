@@ -13,11 +13,23 @@ import com.idilia.samples.ts.docs.Document;
  */
 public class FeedDocument {
 
+  enum Status {
+    /** Kept document using user positive keywords */
+    USER_KW_KEPT,
+    /** Kept document as determined by the matching/eval API */
+    KEPT, 
+    /** Document that can't be classify neither with keywords or API */
+    INCONCLUSIVE, 
+    /** Document rejected by the matching/eval API */
+    REJECTED,
+    /** Document rejected by a negative user keyword */
+    USER_KW_REJECTED,
+  };
+
   /**
    * Create from a document obtained from the DocumentSource
    * 
-   * @param doc
-   *          document to insert in the feed
+   * @param doc document to insert in the feed
    */
   FeedDocument(Document doc) {
     this.doc = doc;
@@ -41,10 +53,8 @@ public class FeedDocument {
    * Add a keyword of the given type. Case insensitive. If the keyword is
    * already known, nothing happens.
    * 
-   * @param kwType
-   *          type of keyword to add
-   * @param kw
-   *          the keyword.
+   * @param kwType type of keyword to add
+   * @param kw the keyword.
    * @return true if the keyword was added.
    */
   boolean addKeyword(KeywordType kwType, String kw) {
@@ -56,10 +66,8 @@ public class FeedDocument {
    * Attempt to remove a keyword of the given type. Does nothing if the keyword
    * was not previously matched in the document. Case insensitive.
    * 
-   * @param kwType
-   *          type of keyword to remove
-   * @param kw
-   *          the keyword.
+   * @param kwType type of keyword to remove
+   * @param kw the keyword.
    * @return true if the keyword was removed.
    */
   boolean removeKeyword(KeywordType kwType, String kw) {
@@ -87,8 +95,7 @@ public class FeedDocument {
   /**
    * Record the keywords used to kept this document.
    * 
-   * @param kw
-   *          The list of keywords that was found in the document
+   * @param kw The list of keywords that was found in the document
    */
   public void setPositiveKeywords(Collection<String> kws) {
     posKws.addAll(kws);
@@ -97,8 +104,7 @@ public class FeedDocument {
   /**
    * Record the keywords used to reject this document
    * 
-   * @param kw
-   *          The list of keywords that was found in the document
+   * @param kw The list of keywords that was found in the document
    */
   public void setNegativeKeywords(Collection<String> kws) {
     negKws.addAll(kws);
@@ -147,8 +153,7 @@ public class FeedDocument {
    * and end with a tab to ensure that we can always search for a token between
    * two tabs. The javascript expects this.
    * 
-   * @param kws
-   *          collection of keywords to serialize
+   * @param kws collection of keywords to serialize
    * @return tab-seperated sequence of keywords
    */
   private String keywordsToString(Collection<String> kws) {
@@ -160,25 +165,61 @@ public class FeedDocument {
       sb.append(kw).append('\t');
     return sb.toString();
   }
-  
+
   /**
    * Return the status classes for the tweet to communicate with the javascript
    * client (see feed.js) the status of the tweet. The classes are:
    * <li>status-keep / status-discard: Whether the tweet was kept or discarded
    * by either the eval API or the user keywords
-   * <li>eval-status-keep / eval-status-discard: Present when the classification
+   * <li>eval-keep / eval-discard: Present when the classification
    * decision was determined by the API instead of user keywords.
    * 
    * @param isKept true when the document has been marked as kept
    */
-  public String getStatusClasses(boolean isKept) {
-    if (getClassificationFromUserKeywords() == 0)
-      return isKept ? "status-keep eval-status-keep" : "status-discard eval-status-discard";
-    else
-      return isKept ? "status-keep" : "status-discard";
+  public String getStatusClasses() {
+    switch (status) {
+    case USER_KW_KEPT:
+      return "status-keep";
+    case KEPT:
+      return "status-keep eval-keep";
+    case INCONCLUSIVE:
+      return "status-unknown";
+    case REJECTED:
+      return "status-discard eval-discard";
+    case USER_KW_REJECTED:
+      return "status-discard";
+    default:
+      return null;
+    }
   }
 
+  /**
+   * Retrieve the current classification status for the document
+   *  
+   * @return document classification status
+   */
+  public Status getStatus() {
+    return status;
+  }
+
+  /**
+   * Set the classification status
+   * @param status new status to assign to document
+   */
+  public void setStatus(Status status) {
+    this.status = status;
+  }
+
+  
+  /** Wrapped document obtained from the document source */
   final private Document doc;
+  
+  /** Classification status */
+  private Status status = Status.INCONCLUSIVE;
+  
+  /** Positive user keywords found in this document */
   final private TreeSet<String> posKws = new TreeSet<>(String.CASE_INSENSITIVE_ORDER);
+  
+  /** Negative user keywords found in this document */
   final private TreeSet<String> negKws = new TreeSet<>(String.CASE_INSENSITIVE_ORDER);
 }

@@ -9,14 +9,17 @@ import java.util.concurrent.CompletionException;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.idilia.samples.ts.db.Search;
+import com.idilia.samples.ts.db.DbSearch;
 import com.idilia.samples.ts.db.User;
 import com.idilia.samples.ts.docs.Document;
 import com.idilia.samples.ts.docs.DocumentSource;
+import com.idilia.samples.ts.docs.FilteringParameters;
 import com.idilia.samples.ts.docs.SearchToken;
 import com.idilia.samples.ts.idilia.MatchingEvalService;
+import com.idilia.services.text.MatchingEvalResponse;
 import com.idilia.tagging.Sense;
 
 /**
@@ -25,12 +28,12 @@ import com.idilia.tagging.Sense;
  * constructing.
  *
  */
-public class UserSearch {
+public class Search {
 
   /**
    * The persistent object which backs-up this object
    */
-  private Search dbSearch;
+  private DbSearch dbSearch;
 
   /**
    * A document source used to fetch unclassified documents
@@ -48,6 +51,11 @@ public class UserSearch {
    * retrieve documents.
    */
   private SearchToken searchToken;
+
+  /**
+   * Options used when classifying returned documents
+   */
+  private FilteringParameters filteringParms;
 
   /**
    * Keywords entered by the user to conclusively identify a document as
@@ -72,6 +80,11 @@ public class UserSearch {
   final private Feed rejected;
 
   /**
+   * The status of the meanings used by the the matching/eval API
+   */
+  private CompletableFuture<List<MatchingEvalResponse.SkModelStatus>> sksStatus = new CompletableFuture<>();
+
+  /**
    * The last fetch request from the user. Null initially
    */
   private DocRequest docRequest;
@@ -89,7 +102,10 @@ public class UserSearch {
    */
   private Pattern docFilterRe;
 
-  private UserSearch() {
+  private final Logger logger = LoggerFactory.getLogger(this.getClass());
+
+  /** Shared construction */
+  private Search() {
     this.matching = new Feed(FeedType.KEPT, -1); // unlimited size
     this.rejected = new Feed(FeedType.DISCARDED, -1);
   }
@@ -97,17 +113,14 @@ public class UserSearch {
   /**
    * Constructor used when creating a new search for a user.
    * 
-   * @param expression
-   *          text of the search expression
-   * @param docSrc
-   *          document source from which we can pull candidate documents
-   * @param matchSvc
-   *          matching service used to classify documents
+   * @param expression text of the search expression
+   * @param docSrc document source from which we can pull candidate documents
+   * @param matchSvc matching service used to classify documents
    */
-  public UserSearch(User user, String expression, DocumentSource docSrc,
+  public Search(User user, String expression, DocumentSource docSrc,
       MatchingEvalService matchSvc) {
     this();
-    this.dbSearch = new Search(user, expression);
+    this.dbSearch = new DbSearch(user, expression);
     this.docSrc = docSrc;
     this.matchSvc = matchSvc;
     this.kwsKeep = new Keywords();
@@ -119,14 +132,11 @@ public class UserSearch {
    * recorded in the database. The DB info includes the user keywords and the
    * word meanings for the search.
    * 
-   * @param dbSrc
-   *          db record for the last time the search was performed
-   * @param docSrc
-   *          document source from which we can pull candidate documents
-   * @param matchSvc
-   *          matching service used to classify documents
+   * @param dbSrc db record for the last time the search was performed
+   * @param docSrc document source from which we can pull candidate documents
+   * @param matchSvc matching service used to classify documents
    */
-  public UserSearch(Search dbSrc, DocumentSource docSrc, MatchingEvalService matchSvc) {
+  public Search(DbSearch dbSrc, DocumentSource docSrc, MatchingEvalService matchSvc) {
     this();
     this.dbSearch = dbSrc;
     this.docSrc = docSrc;
@@ -156,8 +166,7 @@ public class UserSearch {
    * the documents returned by the document service. Documents without it are
    * thrown away (not rejected).
    * 
-   * @param expr
-   *          expression compiled as a regex that documents must find.
+   * @param expr expression compiled as a regex that documents must find.
    */
   public void setDocumentFilter(String expr) {
     this.docFilterRe = Pattern.compile(expr);
@@ -166,29 +175,22 @@ public class UserSearch {
   /**
    * Set the senses for the words of the search expression.
    * 
-   * @param senses
-   *          senses obtained from the tagging menu plugin.
+   * @param senses senses obtained from the tagging menu plugin.
    */
   public void setExpressionSenses(List<Sense> senses) {
-    if (getExpressionSenses() != null && !getExpressionSenses().equals(senses)) {
-      kwsKeep = new Keywords();
-      kwsDiscard = new Keywords();
-      jobRunning.cancel(false);
-    }
     dbSearch.setSenses(senses);
   }
 
   /**
    * Reset the processing to start a new search
    * 
-   * @param search
-   *          token that describes the search to perform
+   * @param search token that describes the search to perform
+   * @param fParms options during document classification
    */
-  public void start(SearchToken token) {
-    jobRunning.cancel(false);
+  public void start(SearchToken token, FilteringParameters fParms) {
     searchToken = token;
-    matching.empty();
-    rejected.empty();
+    filteringParms = fParms;
+    startFetchJob();
   }
 
   /**
@@ -208,8 +210,7 @@ public class UserSearch {
   /**
    * Return list of user keywords for the type given
    * 
-   * @param kwType
-   *          type of keywords to return
+   * @param kwType type of keywords to return
    * @return list of keywords or empty list when none
    */
   public Keywords getKeywords(KeywordType kwType) {
@@ -219,8 +220,7 @@ public class UserSearch {
   /**
    * Return the feed requested.
    * 
-   * @param feedType
-   *          feed desired
+   * @param feedType feed desired
    * @return Feed object for either the matching or the rejected documents.
    */
   public Feed getFeed(FeedType feedType) {
@@ -232,10 +232,8 @@ public class UserSearch {
    * containing the keyword are moved to the correct feed (discarded for a
    * negative keyword, kept for a positive keyword).
    * 
-   * @param kwType
-   *          Whether the keyword is for matching or rejecting
-   * @param kw
-   *          string of the keyword
+   * @param kwType Whether the keyword is for matching or rejecting
+   * @param kw string of the keyword
    * @return true if the keyword was added (i.e., did not already exist)
    */
   public boolean addKeyword(KeywordType kwType, String kw) {
@@ -253,7 +251,10 @@ public class UserSearch {
        * feed moves the document to the kept feed.
        */
       List<FeedDocument> fromRej = rejected.addUserKeyword(kwType, kw);
-      rejected.addAll(matching.addUserKeyword(kwType, kw));
+      List<FeedDocument> fromKpt = matching.addUserKeyword(kwType, kw);
+      fromKpt.stream().forEach(d -> d.setStatus(FeedDocument.Status.USER_KW_REJECTED));
+      fromRej.stream().forEach(d -> d.setStatus(FeedDocument.Status.USER_KW_KEPT));
+      rejected.addAll(fromKpt);
       matching.addAll(fromRej);
     }
     return added;
@@ -265,10 +266,8 @@ public class UserSearch {
    * correct feed. If the resulting classification is neutral, then compute it.
    * <p>
    * 
-   * @param kwType
-   *          Whether the keyword is for matching or rejecting
-   * @param kw
-   *          string of the keyword
+   * @param kwType Whether the keyword is for matching or rejecting
+   * @param kw string of the keyword
    * @return true if the keyword existed
    */
   public boolean removeKeyword(KeywordType kwType, String kw) {
@@ -287,26 +286,39 @@ public class UserSearch {
       for (FeedDocument d : fromRej) {
         if (d.getClassificationFromUserKeywords() == 0)
           toReclass.add(d.getDoc());
-        else
+        else {
+          d.setStatus(FeedDocument.Status.USER_KW_KEPT);
           matching.add(d);
+        }
       }
 
       for (FeedDocument d : fromMatching) {
         if (d.getClassificationFromUserKeywords() == 0)
           toReclass.add(d.getDoc());
-        else
+        else {
+          d.setStatus(FeedDocument.Status.USER_KW_REJECTED);
           rejected.add(d);
+        }
       }
 
       if (!toReclass.isEmpty()) {
         try {
-          List<Double> res = matchSvc.matchAsync(getExpressionSenses(), toReclass, dbSearch.getUser().getId()).join();
+          MatchingEvalResponse response = matchSvc
+              .matchAsync(getExpressionSenses(), toReclass, dbSearch.getUser().getId()).join();
+          List<Double> res = response.getResult();
           for (int i = 0; i < res.size(); ++i) {
             Document d = toReclass.get(i);
-            if (res.get(i) < 0)
-              rejected.add(new FeedDocument(d));
-            else
-              matching.add(new FeedDocument(d));
+            FeedDocument fd = new FeedDocument(d);
+            if (res.get(i) < 0) {
+              fd.setStatus(FeedDocument.Status.REJECTED);
+              rejected.add(fd);
+            } else if (res.get(i) == 0) {
+              fd.setStatus(FeedDocument.Status.INCONCLUSIVE);
+              (filteringParms.isDiscardInconclusive() ? rejected : matching).add(fd);
+            } else {
+              fd.setStatus(FeedDocument.Status.KEPT);
+              matching.add(fd);
+            }
           }
         } catch (CompletionException | CancellationException e) {
           /* Unexpected exception. Just drop those documents */
@@ -333,7 +345,7 @@ public class UserSearch {
    * 
    * @return database object to persist
    */
-  Search toDb() {
+  DbSearch toDb() {
     dbSearch.setPositiveKeywords(new ArrayList<>(kwsKeep.getSet()));
     dbSearch.setNegativeKeywords(new ArrayList<>(kwsDiscard.getSet()));
     return dbSearch;
@@ -351,12 +363,9 @@ public class UserSearch {
    * assigned to the future.
    * <p>
    * 
-   * @param feedType
-   *          feed from which to retrieve documents
-   * @param minCnt
-   *          minimum number of documents to retrieve
-   * @param maxCnt
-   *          maximum number of documents to retrieve
+   * @param feedType feed from which to retrieve documents
+   * @param minCnt minimum number of documents to retrieve
+   * @param maxCnt maximum number of documents to retrieve
    * @return a completable future that is set once results become available.
    */
   public CompletableFuture<List<FeedDocument>> getDocumentsAsync(FeedType feedType, int minCnt,
@@ -396,13 +405,20 @@ public class UserSearch {
   /**
    * Sychronous version of getDocumentsAsync
    * 
-   * @throws CompletionException
-   *           that wraps the true Exception
+   * @throws CompletionException that wraps the true Exception
    */
   public List<FeedDocument> getDocuments(FeedType feedType, int minCnt, int maxCnt)
       throws CompletionException {
     CompletableFuture<List<FeedDocument>> future = getDocumentsAsync(feedType, minCnt, maxCnt);
     return future.join();
+  }
+
+  /**
+   * Return the sensekey (meaning per search term) status as defined by the
+   * matching API
+   */
+  public final CompletableFuture<List<MatchingEvalResponse.SkModelStatus>> getSksEvalStatus() {
+    return sksStatus;
   }
 
   /**
@@ -435,6 +451,7 @@ public class UserSearch {
                     || (!searchToken.isFinished() && docRequest.feed.getNumAvailable() < docRequest.minCnt))
                   startFetchJob();
               }
+              logger.debug("Finished one fetch job");
             });
   }
 
@@ -505,7 +522,9 @@ public class UserSearch {
       /* First step: pull 100 documents from the document source */
       return docSrc.getNextDocuments(searchToken, 100)
 
-          .thenCompose(/* List<Document> */ds -> {
+          .thenCompose((List<? extends Document> ds) -> {
+
+            logger.debug(String.format("Got %d documents from document source", ds.size()));
 
             /* Save the rx documents */
             this.docs = new ArrayList<>(ds.size());
@@ -532,24 +551,42 @@ public class UserSearch {
                 forApi.add(docs.get(i).getDoc());
             return matchSvc.matchAsync(getExpressionSenses(), forApi, dbSearch.getUser().getId());
 
-          }).thenApply(/* List<Integer> */apiRes -> {
+          }).thenApply((MatchingEvalResponse apiRes) -> {
+
+            logger.debug(String.format("Classified %d documents from document source", apiRes.getResult().size()));
+
+            /*
+             * If the first time, record the skModelStatus element from the API
+             * result. It's the same for all subsequent requests for this
+             * search.
+             */
+            if (!sksStatus.isDone())
+              sksStatus.complete(apiRes.getSkModelStatuses());
 
             /*
              * Final step: Record the documents into their feed. Maintain the
              * original order
              */
+            List<Double> docRes = apiRes.getResult();
             int apiIdx = 0;
             for (int docIdx = 0; docIdx < docs.size(); ++docIdx) {
-              if (kwRes.get(docIdx) < 0)
-                rejected.add(docs.get(docIdx));
-              else if (kwRes.get(docIdx) > 0)
-                matching.add(docs.get(docIdx));
-              else {
-                if (apiRes.get(apiIdx) < 0)
-                  rejected.add(docs.get(docIdx));
-                else {
-                  // both matching and indeterminate go to matching feed
-                  matching.add(docs.get(docIdx));
+              FeedDocument doc = docs.get(docIdx);
+              if (kwRes.get(docIdx) < 0) {
+                doc.setStatus(FeedDocument.Status.USER_KW_REJECTED);
+                rejected.add(doc);
+              } else if (kwRes.get(docIdx) > 0) {
+                doc.setStatus(FeedDocument.Status.USER_KW_KEPT);
+                matching.add(doc);
+              } else {
+                if (docRes.get(apiIdx) < 0) {
+                  rejected.add(doc);
+                  doc.setStatus(FeedDocument.Status.REJECTED);
+                } else if (docRes.get(apiIdx) == 0) {
+                  doc.setStatus(FeedDocument.Status.INCONCLUSIVE);
+                  (filteringParms.isDiscardInconclusive() ? rejected : matching).add(doc);
+                } else {
+                  doc.setStatus(FeedDocument.Status.KEPT);
+                  matching.add(doc);
                 }
                 ++apiIdx;
               }
@@ -564,8 +601,7 @@ public class UserSearch {
      * >0 for each document when not matching, unknown, or matching. The value
      * is set based on the number of keyords found.
      * 
-     * @param a
-     *          list of document to analyze
+     * @param a list of document to analyze
      * @return a list of return codes for each document in the same order as the
      *         input list
      */
@@ -613,4 +649,5 @@ public class UserSearch {
   public String toString() {
     return getExpression();
   }
+
 }

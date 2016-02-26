@@ -11,6 +11,7 @@ import com.idilia.services.base.IdiliaCredentials;
 import com.idilia.services.kb.TaggingMenuRequest;
 import com.idilia.services.kb.TaggingMenuResponse;
 import com.idilia.services.text.DisambiguateRequest;
+import com.idilia.services.text.DisambiguateResponse;
 import com.idilia.tagging.Sense;
 
 /**
@@ -42,18 +43,17 @@ public class TaggingMenuService {
    * <li>parenthesis used to form groups
    * <li>keyword OR
    * <li>words rejected by preceeding them with a minus
+   * <li>hash tags
    * </ul>
    */
-  private final Pattern oneRe = Pattern.compile("(\"|\\(|\\)|(?<= )OR(?= )|-\\w+)");
+  private final Pattern oneRe = Pattern.compile("(\"|\\(|\\)|(?<= )OR(?= )|[#-]\\w+)");
 
   /**
    * Create the service
    * 
-   * @param creds
-   *          idilia credentials
-   * @param sensecardTmpl
-   *          template to use when generating the menu. Aligned with the
-   *          jquery_tagging_menu version used by the project.
+   * @param creds idilia credentials
+   * @param sensecardTmpl template to use when generating the menu. Aligned with
+   *        the jquery_tagging_menu version used by the project.
    */
   public TaggingMenuService(IdiliaCredentials creds, String sensecardTmpl) {
     this.txtClient = new com.idilia.services.text.AsyncClient(creds);
@@ -66,8 +66,7 @@ public class TaggingMenuService {
    * tagging menu from attempting to generate senses on those words. Also
    * excludes terms preceded by a minus sign, parenthesis, and double quotes
    * 
-   * @param exp
-   *          Original expression
+   * @param exp Original expression
    * @return Modified expression where operators are wrapped to ensure that
    *         ignored
    */
@@ -81,16 +80,15 @@ public class TaggingMenuService {
   /**
    * Return a tagging menu for the text given.
    * 
-   * @param text
-   *          the text where we want to assign word meanings. The text may be
-   *          html formatted to force specific senses or prevent senses to be
-   *          assigned on some words.
-   * @param customerId
-   *          id of the customer. Used to enable customer-specific senses.
+   * @param text the text where we want to assign word meanings. The text may be
+   *        html formatted to force specific senses or prevent senses to be
+   *        assigned on some words.
+   * @param customerId id of the customer. Used to enable customer-specific
+   *        senses.
    * @return a TaggingMenuResponse that contains html for the text and for the
    *         sense menus.
-   * @throws IdiliaClientException
-   *           when the menu cannot be obtained successfully for any reason.
+   * @throws IdiliaClientException when the menu cannot be obtained successfully
+   *         for any reason.
    */
   public CompletableFuture<TaggingMenuResponse> getTaggingMenu(String text, UUID customerId)
       throws IdiliaClientException {
@@ -103,28 +101,29 @@ public class TaggingMenuService {
   /**
    * Return a tagging menu for the senses given.
    * 
-   * @param senses
-   *          the senses to use for seeding the tagging menu.
-   * @param customerId
-   *          id of the customer. Used to enable customer-specific senses.
+   * @param senses the senses to use for seeding the tagging menu.
+   * @param customerId id of the customer. Used to enable customer-specific
+   *        senses.
    * @return a TaggingMenuResponse that contains html for the text and for the
    *         sense menus.
-   * @throws IdiliaClientException
-   *           when the menu cannot be obtained successfully for any reason.
+   * @throws IdiliaClientException when the menu cannot be obtained successfully
+   *         for any reason.
    */
   public CompletableFuture<TaggingMenuResponse> getTaggingMenu(List<Sense> senses, UUID customerId)
       throws IdiliaClientException {
-    
+
     StringBuilder sb = new StringBuilder(senses.size() * 64);
-    for (Sense sense: senses) {
+    for (Sense sense : senses) {
       if (sense.getFsk() != null) {
         /* Constrain the menu to have the sense available */
         sb.append("<span data-idl-fsk=\"").append(sense.getFsk().replace("\"", "&quot;")).append("\">");
         sb.append(sense.getText());
         sb.append("</span>");
       } else
-        /* When there is no sense, it means the word is something that we decided to ignore
-         * E.g., boolean operators, negative terms, etc. */
+        /*
+         * When there is no sense, it means the word is something that we
+         * decided to ignore E.g., boolean operators, negative terms, etc.
+         */
         sb.append("<span data-idl-fsk=\"ina\">").append(sense.getText()).append("</span>");
       if (sense.isSpcAft())
         sb.append(' ');
@@ -140,13 +139,12 @@ public class TaggingMenuService {
    * Helper function to obtain the tagging menu once the DisambiguateRequest has
    * been constructed.
    * 
-   * @param disReq
-   *          disambiguate request that contains the text to process
-   * @param customerId
-   *          id of the customer. Used to enable customer-specific senses.
+   * @param disReq disambiguate request that contains the text to process
+   * @param customerId id of the customer. Used to enable customer-specific
+   *        senses.
    * @return a CompletableFuture that is set once the menu is available
-   * @throws IdiliaClientException
-   *           when the menu cannot be obtained successfully for any reason.
+   * @throws IdiliaClientException when the menu cannot be obtained successfully
+   *         for any reason.
    */
   private CompletableFuture<TaggingMenuResponse> getTaggingMenu(DisambiguateRequest disReq,
       UUID customerId) throws IdiliaClientException {
@@ -164,8 +162,7 @@ public class TaggingMenuService {
      * information into a tagging menu) have been completed.
      */
 
-    return txtClient.disambiguateAsync(disReq).thenCompose(
-        /* DisambiguateResponse */ disResp -> {
+    return txtClient.disambiguateAsync(disReq).thenCompose((DisambiguateResponse disResp) -> {
           /*
            * Lambda function to convert convert disResp of type
            * DisambiguateResponse to a TaggingMenuResponse by invoking the KB

@@ -84,44 +84,142 @@ idilia.ts.search = function() {
 
     $(document).trigger("newExpr");
   };
+  
+  /**
+   * Handler when opening or closing the advanced search panel.
+   */
+  var advancedSearchEH = function(event) {
+      /* Toggle stuff, including the form */
+      $("#search-button").toggleClass("btn-primary");
+      $("#adv-search-fields").toggle(200);
+      
+      if ($(this).parent().toggleClass("dropup").hasClass("dropup")) {
+        /* Opening action */
+        
+        /* Do the same actions as if clicking in the main query field input */
+        queryEntryEH(event);
+        
+        /* If word fields are changed, this invalidates the main query field input */
+        $("#adv-search-words input").change( function () {
+          $("#search-query").val('');
+        });
+        
+        /* Submitting the form using the adv search button */
+        $("#adv-search-submit").click(function (event) {
+          /* Move the words content to the search query box. */
+          var expr = convertAdvancedSearchWordsToExpr();
+          if (expr) {
+            $("#search-query").val(expr);
+          }
+        });
+      } else {
+        /* Closing action by rolling up the button */
+        var expr = convertAdvancedSearchWordsToExpr();
+        if (expr) {
+          $("#search-query").val(expr);
+        }
+      }
+      
+      event.preventDefault();
+  };
+  
+  
+  /** 
+   * Helper to return the string value equivalent to the multiple words fields in the
+   * advanced search form.
+   * @return null if nothing in fields, or a twitter syntax expression
+   */
+  var convertAdvancedSearchWordsToExpr = function() {
+    var q = $("#allWords").val() || '';
+    
+    var p = $("#phrase").val() || '';
+    if (p !== '') {
+      q = q + ' "' + p + '"'
+    };
+    
+    var any = $("#anyWords").val() || '';
+    if (any !== '') {
+      var anys = any.split(' ');
+      var addedOne = false;
+      for (var i = 0; i < anys.length; ++i) {
+        var a = anys[i].trim();
+        if (a.length > 0) {
+          if (addedOne) {
+            q = q + " OR " + a;
+          } else {
+            q = q + ' ' + a;
+            addedOne = true;
+          }
+        }
+      }
+    }
+    
+    var none = $("#noneWords").val() || '';
+    if (none !== '') {
+      var nones = none.split(' ');
+      for (var i = 0; i < nones.length; ++i) {
+        var n = nones[i].trim();
+        if (n.length > 0) {
+          q = q + " -" + n;
+        }
+      }
+    }
+    
+    var tag = $("#hashTags").val() || '';
+    if (tag !== '') {
+      var tags = tag.split(' ');
+      for (var i = 0; i < tags.length; ++i) {
+        var n = tags[i].trim();
+        if (n.length > 0) {
+          if (n.charAt(0) == '#') {
+            q = q + " " + n;
+          } else {
+            q = q + " #" + n;
+          }
+        }
+      }
+    }
+    
+    return q.length === 0 ? null : q;
+  };
 
+  
   /**
    * Handler invoked when the text expression is submitted. Tell the server to
    * get sense information and on the callback inform the listeners.
    */
   var newExprEH = function(event) {
     event.preventDefault();
-    if ($("#search-query").val().trim() !== "") {
-      var $form = $("#search-form");
-      var formData = $form.serialize();
-      $("html").addClass("busy");
-      $.post($form.attr("action"), formData).done(function(data) {
-        /*
-         * Replace the search area with the new content that includes the sense
-         * selection for the words. Activate the sense menu.
-         */
-        $("#search-container").html(data);
-        $(".idl-tile-any .idl-def p").html("Search for any meaning");
-        
-        renderTaggingMenu();
 
-        /*
-         * Now that we have a submitted an expression the primary action is now
-         * to proceed
-         */
-        $("#search-button").removeClass("btn-primary").addClass("btn-default");
+    var $form = $("#search-form");
+    var formData = $form.serialize();
+    $("html").addClass("busy");
+    $.post($form.attr("action"), formData).done(function(data) {
+      /*
+       * Replace the search area with the new content that includes the sense
+       * selection for the words. Activate the sense menu.
+       */
+      $("#search-container").html(data);
+      $(".idl-tile-any .idl-def p").html("Search for any meaning");
+      
+      renderTaggingMenu();
 
-        /* Set the focus on the search button */
-        $("#senses-form button").focus();
+      /*
+       * Now that we have a submitted an expression the primary action is now
+       * to proceed
+       */
+      $("#search-button").removeClass("btn-primary").addClass("btn-default");
 
-        /* We just reloaded the search box so re-init autocomplete */
-        initAutocompleteUI();
-      }).fail(function(jqXHR, textStatus) {
-        alert("Server failed to accept new search");
-      }).always(function() {
-        $("html").removeClass("busy");
-      });
-    }
+      /* Set the focus on the search button */
+      $("#senses-form button").focus();
+
+      /* We just reloaded the search box so re-init autocomplete */
+      initAutocompleteUI();
+    }).fail(function(jqXHR, textStatus) {
+      alert("Server failed to accept new search");
+    }).always(function() {
+      $("html").removeClass("busy");
+    });
   };
 
   /**
@@ -132,6 +230,7 @@ idilia.ts.search = function() {
     event.preventDefault();
     /* Read the results from the tagging menu and send them as a JSON object to the server */
     var senses = $("#search-words").children().first().data("taggingMenu").sensesAsObjects();
+    $("html").addClass("busy");
     $.ajax({
       data : JSON.stringify(senses),
       method : "POST",
@@ -148,6 +247,8 @@ idilia.ts.search = function() {
       $(document).trigger("newFeed", data);
     }).fail(function(jqXHR, textStatus) {
       alert("Server failed to process expression senses");
+    }).always(function() {
+      $("html").removeClass("busy");
     });
   };
 
@@ -166,11 +267,12 @@ idilia.ts.search = function() {
   var init = function() {
 
     $("#search-container").
-      on("click", "#query", queryEntryEH).
+      on("click", "#search-query", queryEntryEH).
       on("submit", "#search-form", newExprEH).
       on("click", "#search-button", newExprEH).
       on("submit", "#senses-form", newSensesEH).
-      on("click", ".idl-menu-word", senseSelStartEH);
+      on("click", ".idl-menu-word", senseSelStartEH).
+      on("click", "#adv-search-button", advancedSearchEH);
 
     /*
      * Initialize the autocomplete remote engine This uses the "/history" method

@@ -106,9 +106,11 @@
 
 <!--/* The text for the three popups used to explain why a tweet is in a feed */-->
 <div class="hidden">
- <div id="status-discard-popup">This tweet has been discarded because it does not contain the right meaning of your word.</div>
- <div id="status-keep-popup">This tweet has been kept because it contains the right meaning of your word or there is no evidence to reject it.</div>
- <div id="status-unknown-popup">The status of this tweet is unknown because some user keywords were removed after its classification.</div>
+ <div id="status-discard-kw-popup">This tweet has been discarded because it contains discard user keyword(s): <strong class="words"></strong>.</div>
+ <div id="status-discard-popup">This tweet has been discarded because it does not contain the right meaning of your search expression.</div>
+ <div id="status-keep-kw-popup">This tweet has been kept because it contains keep user keyword(s): <strong class="words"></strong>.</div>
+ <div id="status-keep-popup">This tweet has been kept because it contains the right meaning of your search expression.</div>
+ <div id="status-unknown-popup">We found this tweet but we can't classify it using your search meanings or the user keywords.</div>
 </div>
 
 <!--/* The text for the pop to explain how to add a user keyword */-->

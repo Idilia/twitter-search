@@ -26,9 +26,10 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.SessionAttributes;
+import org.springframework.web.context.request.async.DeferredResult;
 
-import com.idilia.samples.ts.db.Search;
-import com.idilia.samples.ts.db.SearchDbService;
+import com.idilia.samples.ts.db.DbSearch;
+import com.idilia.samples.ts.db.DbSearchService;
 import com.idilia.samples.ts.db.SearchExpr;
 import com.idilia.samples.ts.db.User;
 import com.idilia.samples.ts.db.UserRepository;
@@ -41,14 +42,14 @@ import com.idilia.tagging.AprioriTaggerBuilder;
 import com.idilia.tagging.Sense;
 
 @Controller
-@SessionAttributes({ "user", "userSearch" })
+@SessionAttributes({ "searchForm", "user", "search" })
 public class SearchController {
 
   @Autowired
   private UserRepository userRepo;
 
   @Autowired
-  private SearchDbService searchDbSvc;
+  private DbSearchService searchDbSvc;
 
   @Autowired
   private DocumentSource docSrc;
@@ -67,10 +68,8 @@ public class SearchController {
    * absent or its value does not match a current user, a new user is allocated
    * and the cookie value is set.
    * 
-   * @param userIdS
-   *          Current value for the cookie. Empty when cookie is absent.
-   * @param response
-   *          Updated with the cookie.
+   * @param userIdS Current value for the cookie. Empty when cookie is absent.
+   * @param response Updated with the cookie.
    * @return User retrieved or allocated for the session.
    */
   private User getUser(String userIdS, HttpServletResponse response) {
@@ -106,9 +105,9 @@ public class SearchController {
   }
 
   /**
-   * Whenever the session expires, the session attribute "user" and "userSearch"
-   * are removed. If another request is made where those attribute are expected
-   * to exist (e.g., /search), then this exception is raised.
+   * Whenever the session expires, the session attribute "user" and "search" are
+   * removed. If another request is made where those attribute are expected to
+   * exist (e.g., /search), then this exception is raised.
    * 
    * @throws IOException
    */
@@ -129,8 +128,8 @@ public class SearchController {
    * Home mapping.
    * <p>
    * Recover the user from the cookie and store it as a persistent attribute of
-   * the model. Also create a blank search and also add it to the model. Return
-   * the name of the template that displays the search box.
+   * the model. Also create a search form with defaults and also add it to the
+   * model. Return the name of the template that displays the search box.
    * <p>
    * 
    * @return name of template to display
@@ -142,12 +141,12 @@ public class SearchController {
     logger.debug("Request for home page");
 
     /*
-     * Add the two session attributes that we expect to always find. The initial
-     * value for the UserSearch is an empty search string.
+     * Add the user as a session attribute. Add another attribute with an empty
+     * search form.
      */
     User user = getUser(userIdS, response);
     model.addAttribute(user);
-    model.addAttribute("userSearch", new UserSearch(user, "", docSrc, matchSvc));
+    model.addAttribute("searchForm", new SearchForm());
 
     /* Return the template with the search box */
     return "application";
@@ -158,12 +157,9 @@ public class SearchController {
    * <p>
    * Retrieve previous searches for the user.
    * 
-   * @param user
-   *          Active user
-   * @param prefix
-   *          prefix for the search
-   * @param model
-   *          Updated model
+   * @param user Active user
+   * @param prefix prefix for the search
+   * @param model Updated model
    * @return list of search expressions previously performed starting with the
    *         prefix
    */
@@ -182,58 +178,63 @@ public class SearchController {
    * Handler when the search expression has been entered.
    * <p>
    * Obtain a sense tagging menu for the expression. Uses multiple strategies to
-   * recover the sense information whenever possible.
+   * recover the sense information whenever possible. Creates the Search session
+   * object.
    * 
-   * @param user
-   *          Active user
-   * @param expr
-   *          string with the search expression entered
-   * @param model
-   *          Spring model
-   * @return Completable future with the name of the rendering template
+   * @param user Active user
+   * @param searchForm form with search expression and the search parameters
+   * @param model Spring model
+   * @return Future with the name of the rendering template
    */
   @RequestMapping("search")
-  public CompletableFuture<String> search(
+  public DeferredResult<String> search(
+      @ModelAttribute SearchForm searchForm,
       @ModelAttribute User user,
-      @ModelAttribute UserSearch search,
-      @RequestParam("q") String expr, Model model) {
+      Model model) {
 
+    String expr = searchForm.getQuery();
     logger.debug("Request for a new search expression: " + expr);
 
-    if (!expr.equals(search.getExpression())) {
+    /**
+     * We're now going to generate a tagging menu for this expression. To make
+     * the task easier for the end-user, we're going to set the senses
+     * information if we can:
+     * <li>first use a previous search by this user
+     * <li>second use the same previous search by another user
+     */
 
-      /* Record the previous search in the database for later recall */
-      if (search.getExpressionSenses() != null)
-        searchDbSvc.save(search.toDb());
-
-      /*
-       * We're now going to generate a tagging menu for this expression. To make
-       * the task easier for the end-user, we're going to set the senses
-       * information if we can: - first use a previous search by this user -
-       * second use the same previous search by another user
-       */
-
-      List<Search> userPrevs = searchDbSvc.getRepo().findByUserAndExpression(user, expr);
-      if (!userPrevs.isEmpty())
-        search = new UserSearch(userPrevs.get(0), docSrc, matchSvc);
-      else {
-        search = new UserSearch(user, expr, docSrc, matchSvc);
-        List<Search> prevs = searchDbSvc.getRepo().findByExpression(expr);
-        if (!prevs.isEmpty())
-          search.setExpressionSenses(prevs.get(0).getSenses());
+    Search newSearch = null; 
+    List<DbSearch> userPrevs = searchDbSvc.getRepo().findByUserAndExpression(user, expr);
+    if (!userPrevs.isEmpty()) {
+      /* Initialize with senses and user keywords */
+      newSearch = new Search(userPrevs.get(0), docSrc, matchSvc);
+    } else {
+      List<DbSearch> prevs = searchDbSvc.getRepo().findByExpression(expr);
+      if (!prevs.isEmpty()) {
+        /* Initialize with senses */
+        newSearch = new Search(user, expr, docSrc, matchSvc);
+        newSearch.setExpressionSenses(prevs.get(0).getSenses());
       }
-      model.addAttribute(search);
     }
+    
+    if (newSearch == null) 
+      newSearch = new Search(user, expr, docSrc, matchSvc);
+    model.addAttribute("search", newSearch);
 
+    
+    final DeferredResult<String> dfRes = new DeferredResult<>((long) 5 * 60 * 1000);
+    
     /*
      * Future that we create here and set to the asynchronous processing
      * required to convert the search expression into a sense tagging menu.
      */
     CompletableFuture<TaggingMenuResponse> tmFtr = null;
 
-    if (search.getExpressionSenses() != null) {
-      /* We have the senses. Build a tagging menu that is initialized with them. */
-      tmFtr = taggingMenuSvc.getTaggingMenu(search.getExpressionSenses(), user.getId());
+    if (newSearch.getExpressionSenses() != null) {
+      /*
+       * We have the senses. Build a tagging menu that is initialized with them.
+       */
+      tmFtr = taggingMenuSvc.getTaggingMenu(newSearch.getExpressionSenses(), user.getId());
     } else {
       /*
        * First time running this search. Attempt to automatically set its senses
@@ -249,18 +250,21 @@ public class SearchController {
       tmFtr = taggingMenuSvc.getTaggingMenu(tmText, user.getId());
     }
 
-    /* 
-     * Return a future that post processes the tagging menu response to
-     * add it to the model and generates the HTML fragment.
+    /*
+     * On completion of the tagging menu response, add it
+     * to the model and signal the deferred results with the HTML fragment.
      */
-    return tmFtr.handle((/* TaggingMenuResponse */tm, ex) -> {
+    tmFtr.whenComplete((TaggingMenuResponse tm, Throwable ex) -> {
       if (ex != null) {
         logger.error("Failed to generate tagging menu", ex);
-        throw new TaggingMenuException();
+        dfRes.setErrorResult(ex);
+      } else {
+        model.addAttribute("tm", tm);
+        dfRes.setResult("search/searchWithSenses :: content");
       }
-      model.addAttribute("tm", tm);
-      return "search/searchWithSenses :: content";
     });
+    
+    return dfRes;
   }
 
   /** Exception thrown when we fail to generate a tagging menu */
@@ -275,26 +279,26 @@ public class SearchController {
    * Record the senses and start the search. After this the client can start
    * polling for results.
    * 
-   * @param search
-   *          Active search
-   * @param senses
-   *          A collection of Sense objects that were read by the client as the
-   *          values of the tagging menu. Receives as the JSON body of the
-   *          request.
-   * @param model
-   *          Spring model
+   * @param search Active search
+   * @param senses A collection of Sense objects that were read by the client as
+   *        the values of the tagging menu. Receives as the JSON body of the
+   *        request.
+   * @param model Spring model
    * 
    * @return a redirect to the method that starts a feed display
    */
   @RequestMapping(value = "searchSenses", method = RequestMethod.POST, consumes = "application/json; charset=utf-8")
-  public String searchSenses(@ModelAttribute UserSearch search,
+  public String searchSenses(
+      @ModelAttribute User user,
+      @ModelAttribute("searchForm") SearchForm searchForm,
+      @ModelAttribute("search") Search search,
       @RequestBody final ArrayList<Sense> senses, Model model) {
 
     logger.debug("search with senses: " + senses.toString());
 
     search.setExpressionSenses(senses);
     searchDbSvc.save(search.toDb());
-    search.start(docSrc.createSearchToken(search.getExpression()));
+    search.start(docSrc.createSearchToken(searchForm), searchForm);
 
     // Return the initial content for the feed for kept documents
     return "redirect:/feed/" + FeedType.KEPT + "/start";

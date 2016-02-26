@@ -36,14 +36,11 @@ public class Feed {
   /** Maximum number of documents to store. */
   final private int maxSize;
 
-  
   /**
    * Constructor
    * 
-   * @param feedType
-   *          type of the feed
-   * @param maxSize
-   *          maximum number of documents to retain. -1 for no limit.
+   * @param feedType type of the feed
+   * @param maxSize maximum number of documents to retain. -1 for no limit.
    */
   Feed(FeedType feedType, int maxSize) {
     this.feedType = feedType;
@@ -52,7 +49,6 @@ public class Feed {
     this.maxSize = maxSize;
   }
 
-  
   /**
    * @return the historical number of documents assigned to this feed.
    */
@@ -60,22 +56,19 @@ public class Feed {
     return numAssigned.get();
   }
 
-  
   /**
    * Add the difference to the current value and return the updated value. This
    * is used when we move document from one feed to another as user keywords are
    * added/removed.
    * <p>
    * 
-   * @param diff
-   *          difference to add to the feed. Can be a negative number.
+   * @param diff difference to add to the feed. Can be a negative number.
    * @return new value for historical number of documents assigned to the feed
    */
   int adjNumAssigned(int diff) {
     return numAssigned.addAndGet(diff);
   }
 
-  
   /**
    * Return true if the feed is unbounded, i.e., stores an unlimited number of
    * documents.
@@ -84,14 +77,12 @@ public class Feed {
     return maxSize > 0;
   }
 
-  
   /**
    * Return true when the feed cannot store more documents.
    */
   boolean isFull() {
     return isBounded() && getNumAvailable() >= maxSize;
   }
-  
 
   /**
    * Return the number of documents currently available in the feed.
@@ -100,14 +91,12 @@ public class Feed {
     return docs.size();
   }
 
-  
   /**
    * Add a new document to the feed. If full, does not store. In all cases
    * update the historical number of stored documents.
    * <p>
    * 
-   * @param doc
-   *          document to store
+   * @param doc document to store
    */
   synchronized void add(FeedDocument doc) {
     if (!isFull())
@@ -115,14 +104,12 @@ public class Feed {
     numAssigned.incrementAndGet();
   }
 
-  
   /**
    * Add new documents to the feed. If full, does not store. In all cases update
    * the historical number of stored documents.
    * <p>
    * 
-   * @param ds
-   *          documents to store
+   * @param ds documents to store
    */
   synchronized void addAll(List<FeedDocument> ds) {
     if (!isFull())
@@ -131,15 +118,13 @@ public class Feed {
     numAssigned.addAndGet(ds.size());
   }
 
-  
   /**
    * Remove the requested number of documents at the front of the collection and
    * return them. If the number of available documents is fewer than the maximum
    * requested, returns what is available.
    * <p>
    * 
-   * @param max
-   *          maximum number of documents to return
+   * @param max maximum number of documents to return
    * @return list with documents. May be empty or shorter than requested
    *         maximum.
    */
@@ -156,16 +141,16 @@ public class Feed {
     }
     return res;
   }
-  
+
   /**
-   * Traverse the document collection to attempt matching the given
-   * keyword in the text of the document. If it is found, the document
-   * is returned but not removed from the collection
+   * Traverse the document collection to attempt matching the given keyword in
+   * the text of the document. If it is found, the document is returned but not
+   * removed from the collection
    * <p>
    * 
-   * @param kw
-   *          Keyword to search for
-   * @return The documents removed because they contained the keyword. Ordered by id.
+   * @param kw Keyword to search for
+   * @return The documents removed because they contained the keyword. Ordered
+   *         by id.
    */
   synchronized List<FeedDocument> getMatching(String kw) {
     if (docs.isEmpty())
@@ -174,18 +159,15 @@ public class Feed {
     return docs.values().stream().filter(d -> re.matcher(d.getDoc().getText()).find()).collect(Collectors.toList());
   }
 
-  
   /**
    * Traverse the document collection to attempt matching the added given
    * keyword in the text of the document. Should the classification of the
-   * document change base on having removed the keywords, the document is
+   * document change base on having added the keywords, the document is
    * returned.
    * <p>
    * 
-   * @param kwType
-   *          type of keyword being added
-   * @param kw
-   *          Keyword to search for
+   * @param kwType type of keyword being added
+   * @param kw Keyword to search for
    * @return The documents removed because they contained the keyword.
    */
   synchronized List<FeedDocument> addUserKeyword(KeywordType kwType, String kw) {
@@ -195,30 +177,34 @@ public class Feed {
     Pattern re = getKeywordRe(kw);
     for (Iterator<Map.Entry<String, FeedDocument>> docIt = docs.entrySet()
         .iterator(); docIt.hasNext();) {
-      
+
       FeedDocument doc = docIt.next().getValue();
       if (re.matcher(doc.getDoc().getText()).find()) {
         if (doc.addKeyword(kwType, kw)) {
           int rc = doc.getClassificationFromUserKeywords();
-          if ((feedType == FeedType.DISCARDED && rc >= 0)
+          if ((feedType == FeedType.DISCARDED && rc > 0)
               || (feedType == FeedType.KEPT && rc < 0)) {
             toMove.add(doc);
             docIt.remove();
+          } else {
+            doc.setStatus(kwType == KeywordType.NEGATIVE ? FeedDocument.Status.USER_KW_REJECTED
+                : FeedDocument.Status.USER_KW_KEPT);
           }
         }
       }
     }
-    
+
     numAssigned.addAndGet(toMove.size() * -1);
     return toMove;
   }
-  
-  
+
   /**
-   * Helper function to generate a regular expression for matching
-   * the given keyword
+   * Helper function to generate a regular expression for matching the given
+   * keyword
+   * 
    * @param kw string of the keyword to match
-   * @return a regex that will match the keyword on word boundaries, case insensitive
+   * @return a regex that will match the keyword on word boundaries, case
+   *         insensitive
    */
   private static Pattern getKeywordRe(String kw) {
     StringBuilder sb = new StringBuilder();
@@ -229,7 +215,6 @@ public class Feed {
       sb.append("\\b");
     return Pattern.compile(sb.toString(), Pattern.CASE_INSENSITIVE);
   }
-  
 
   /**
    * Traverse the document collection to remove the given keyword. Should the
@@ -239,10 +224,8 @@ public class Feed {
    * The keyword is matched in the collection of keywords recorded for each
    * document. We don't need to look at the text.
    * 
-   * @param kwType
-   *          type of keyword being removed
-   * @param kw
-   *          Keyword to search for
+   * @param kwType type of keyword being removed
+   * @param kw Keyword to search for
    * @return The documents removed because they had the keyword.
    */
   synchronized List<FeedDocument> removeUserKeyword(KeywordType kwType,
@@ -252,7 +235,7 @@ public class Feed {
     List<FeedDocument> toMove = new ArrayList<>();
     for (Iterator<Map.Entry<String, FeedDocument>> docIt = docs.entrySet()
         .iterator(); docIt.hasNext();) {
-      
+
       FeedDocument doc = docIt.next().getValue();
       if (doc.removeKeyword(kwType, kw)) {
         int rc = doc.getClassificationFromUserKeywords();
@@ -266,7 +249,6 @@ public class Feed {
     numAssigned.addAndGet(toMove.size() * -1);
     return toMove;
   }
-  
 
   /**
    * Reset the feed to its initial state.

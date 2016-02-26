@@ -15,8 +15,7 @@ public final class TweetFormatter {
   /**
    * Return a "user friendly" formatted date.
    * 
-   * @param t
-   *          tweet to process
+   * @param t tweet to process
    * @return a string representing relative time between the current time and
    *         the tweet creation.
    */
@@ -46,38 +45,40 @@ public final class TweetFormatter {
    * Return html formatted text for the body of the tweet.
    */
   static public String renderBody(Tweet tweet) {
-    
+
     String t = tweet.getText();
 
-//    List<Tweet.Entity> entities = new ArrayList<>();
-//    if (tweet.getHashTags() != null)
-//      entities.addAll(tweet.getHashTags());
-//    if (tweet.gettCoLinks() != null)
-//      entities.addAll(tweet.gettCoLinks());
-//    if (tweet.getUserMentions() != null)
-//      entities.addAll(tweet.getUserMentions());
-//    
-//    // Sort in decreasing order
-//    entities.sort((e1, e2) -> Integer.compare(e1.end, e2.end));
-//    
-//    // Now that we have sorted the entities in decreasing order
-//    // perform the replacements
-//    StringBuilder res = new StringBuilder();
-//    int lastEnd = 0;
-//    for (Tweet.Entity e: entities) {
-//      if (e.start >= 0) {
-//        res.append(StringEscapeUtils.escapeHtml(tweet.getText().substring(lastEnd, e.start)));
-//        res.append(e.format(tweet.getText()));
-//        lastEnd = e.end;
-//      }
-//    }
-//    res.append(StringEscapeUtils.escapeHtml(tweet.getText().substring(lastEnd, tweet.getText().length())));
-//    
-//    String t = res.toString();
-//    for (Tweet.Entity e: entities)
-//      if (e.end < 0)
-//        t = e.format(t);
-  
+    // List<Tweet.Entity> entities = new ArrayList<>();
+    // if (tweet.getHashTags() != null)
+    // entities.addAll(tweet.getHashTags());
+    // if (tweet.gettCoLinks() != null)
+    // entities.addAll(tweet.gettCoLinks());
+    // if (tweet.getUserMentions() != null)
+    // entities.addAll(tweet.getUserMentions());
+    //
+    // // Sort in decreasing order
+    // entities.sort((e1, e2) -> Integer.compare(e1.end, e2.end));
+    //
+    // // Now that we have sorted the entities in decreasing order
+    // // perform the replacements
+    // StringBuilder res = new StringBuilder();
+    // int lastEnd = 0;
+    // for (Tweet.Entity e: entities) {
+    // if (e.start >= 0) {
+    // res.append(StringEscapeUtils.escapeHtml(tweet.getText().substring(lastEnd,
+    // e.start)));
+    // res.append(e.format(tweet.getText()));
+    // lastEnd = e.end;
+    // }
+    // }
+    // res.append(StringEscapeUtils.escapeHtml(tweet.getText().substring(lastEnd,
+    // tweet.getText().length())));
+    //
+    // String t = res.toString();
+    // for (Tweet.Entity e: entities)
+    // if (e.end < 0)
+    // t = e.format(t);
+
     // Put links where http
     Matcher m = httpRe.matcher(t);
     t = m.replaceAll("<a target=\"_blank\" class=\"link\" href=\"$1$2\">$2</a>");
@@ -85,20 +86,24 @@ public final class TweetFormatter {
     // Link to hashtags
     m = tagsRe.matcher(t);
     t = m
-        .replaceAll("<a target=\"_blank\" class=\"tag\" href=\"https://twitter.com/hashtag/$1?src=hash\")><span class=\"hash\">#</span><span class=\"hashtext\">$1</span></a>");
+        .replaceAll(
+            "<a target=\"_blank\" class=\"tag\" href=\"https://twitter.com/hashtag/$1?src=hash\")><span class=\"hash\">#</span><span class=\"hashtext\">$1</span></a>");
 
     // Link to other users
     m = userRe.matcher(t);
     t = m
-        .replaceAll("<a target=\"_blank\" class=\"tag\" href=\"https://twitter.com/$1\"><span class=\"at-sign\">@</span><span class=\"username\">$1</span></a>");
+        .replaceAll(
+            "<a target=\"_blank\" class=\"tag\" href=\"https://twitter.com/$1\"><span class=\"at-sign\">@</span><span class=\"username\">$1</span></a>");
 
     return t;
   }
-  
+
   /*
-   * Date formatters for converting to/from the tweet date to the visual representation
+   * Date formatters for converting to/from the tweet date to the visual
+   * representation
    */
   private static final SimpleDateFormat twtDateFmt, outDateFmt;
+
   static {
     twtDateFmt = new SimpleDateFormat("EEE MMM dd HH:mm:ss ZZZZZ yyyy");
     twtDateFmt.setLenient(true);
