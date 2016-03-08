@@ -16,7 +16,7 @@
 
      <div class="input-group">
       <input class="typeahead form-control" type="text" id="search-query" placeholder="Enter search text" autocomplete="off" lang="en" spellcheck="true" size="40"
-       required="required" th:field="*{searchForm.query}" th:value="${searchForm.query}" aria-autocomplete="list" aria-expanded="false" aria-owns="typeahead-dropdown-1" />
+       required="required" th:field="*{searchForm.query}" aria-autocomplete="list" aria-expanded="false" aria-owns="typeahead-dropdown-1" />
       <div class="input-group-btn">
        <button class="btn btn-primary" id="search-button" type="submit">
         <span class="glyphicon glyphicon-search"></span>
@@ -36,14 +36,14 @@
       </button>
       <ul class="dropdown-menu">
        <li>
-         <label class="checkbox-inline"> 
-          <input class="" type="checkbox" th:field="*{searchForm.discardInconclusive}" th:checked="${searchForm.discardInconclusive}"></input>
+         <label th:for="${#ids.next('discardInconclusive')}" class="checkbox-inline"> 
+          <input type="checkbox" th:field="*{searchForm.discardInconclusive}"></input>
           Discard when inconclusive
          </label>
         </li>
        <li>
-         <label class="checkbox-inline"> 
-          <input class="" type="checkbox" disabled="disabled" th:field="*{searchForm.rejectedOnMissingWords}" th:checked="${searchForm.rejectedOnMissingWords}"></input>
+         <label th:for="${#ids.next('discardOnMissingWords')}" class="checkbox-inline"> 
+          <input type="checkbox" th:field="*{searchForm.discardOnMissingWords}"></input>
           Discard when missing words
          </label>
         </li>
@@ -65,35 +65,35 @@
       <div class="form-group">
        <label class="control-label col-sm-3">All of these words</label>
        <div class="col-sm-7">
-        <input type="text" lang="en" spellcheck="true" th:field="*{searchForm.allWords}" th:value="${searchForm.allWords}" class="form-control" />
+        <input type="text" lang="en" spellcheck="true" th:field="*{searchForm.allWords}" class="form-control" />
        </div>
       </div>
 
       <div class="form-group">
        <label class="control-label col-sm-3">This exact phrase</label>
        <div class="col-sm-7">
-        <input type="text" lang="en" spellcheck="true" th:field="*{searchForm.phrase}" th:value="${searchForm.phrase}" class="form-control" />
+        <input type="text" lang="en" spellcheck="true" th:field="*{searchForm.phrase}" class="form-control" />
        </div>
       </div>
 
       <div class="form-group">
        <label class="control-label col-sm-3">Any of these words</label>
        <div class="col-sm-7">
-        <input type="text" lang="en" spellcheck="true" th:field="*{searchForm.anyWords}" th:value="${searchForm.anyWords}" class="form-control" />
+        <input type="text" lang="en" spellcheck="true" th:field="*{searchForm.anyWords}" class="form-control" />
        </div>
       </div>
 
       <div class="form-group">
        <label class="control-label col-sm-3">None of these words</label>
        <div class="col-sm-7">
-        <input type="text" lang="en" spellcheck="true" th:field="*{searchForm.noneWords}" th:value="${searchForm.noneWords}" class="form-control" />
+        <input type="text" lang="en" spellcheck="true" th:field="*{searchForm.noneWords}" class="form-control" />
        </div>
       </div>
 
       <div class="form-group">
        <label class="control-label col-sm-3">These hashtags</label>
        <div class="col-sm-7">
-        <input type="text" th:field="*{searchForm.hashTags}" th:value="${searchForm.hashTags}" class="form-control" />
+        <input type="text" th:field="*{searchForm.hashTags}" class="form-control" />
        </div>
       </div>
 
@@ -151,15 +151,15 @@
        <div class="col-sm-7">
 
         <label class="checkbox-inline"> 
-         <input type="checkbox" th:field="*{searchForm.positive}" th:value="${searchForm.positive}"></input> Positive :)
+         <input type="checkbox" th:field="*{searchForm.positive}"></input> Positive :)
         </label> 
         <label class="checkbox-inline"> 
-         <input type="checkbox" th:field="*{searchForm.negative}" th:value="${searchForm.negative}"></input> Negative :()</label>
+         <input type="checkbox" th:field="*{searchForm.negative}"></input> Negative :()</label>
         <label class="checkbox-inline">
-         <input type="checkbox" th:field="*{searchForm.question}" th:value="${searchForm.question}"></input> Question ?
+         <input type="checkbox" th:field="*{searchForm.question}"></input> Question ?
         </label>
         <label class="checkbox-inline"> 
-         <input type="checkbox" th:field="*{searchForm.includeRetweets}" th:value="${searchForm.includeRetweets}"></input> Include retweets
+         <input type="checkbox" th:field="*{searchForm.includeRetweets}"></input> Include retweets
         </label>
 
        </div>

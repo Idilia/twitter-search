@@ -9,6 +9,7 @@ import java.util.concurrent.CompletableFuture;
 import javax.servlet.http.Cookie;
 import javax.servlet.http.HttpServletResponse;
 
+import org.apache.commons.lang.StringEscapeUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -181,8 +182,8 @@ public class SearchController {
    * recover the sense information whenever possible. Creates the Search session
    * object.
    * 
-   * @param user Active user
    * @param searchForm form with search expression and the search parameters
+   * @param user Active user
    * @param model Spring model
    * @return Future with the name of the rendering template
    */
@@ -245,6 +246,7 @@ public class SearchController {
         senses.addAll(se.senses);
       AprioriTagger tagger = new AprioriTaggerBuilder(senses).setCaseInsensitive(true)
           .setMatchesPluralNouns(true).build();
+      expr = StringEscapeUtils.escapeXml(expr);
       String tmText = taggingMenuSvc.convertBooleanExp(expr);
       tmText = tagger.tag(tmText);
       tmFtr = taggingMenuSvc.getTaggingMenu(tmText, user.getId());

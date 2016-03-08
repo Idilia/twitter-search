@@ -6,6 +6,7 @@ import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 
 import com.idilia.samples.ts.docs.Document;
+import com.idilia.samples.ts.docs.FilteringParameters;
 import com.idilia.services.base.IdiliaClientException;
 import com.idilia.services.base.IdiliaCredentials;
 import com.idilia.services.text.AsyncClient;
@@ -41,11 +42,12 @@ public class MatchingEvalService {
    *         call to Idilia's matching eval service
    */
   public CompletableFuture<MatchingEvalResponse> matchAsync(List<Sense> senses,
-      final List<? extends Document> docs, UUID customerId) throws IdiliaClientException {
+      FilteringParameters filterParms, final List<? extends Document> docs, UUID customerId) throws IdiliaClientException {
 
     MatchingEvalRequest req = new MatchingEvalRequest();
     req.setExpression(senses);
     req.setCustomerId(customerId);
+    req.setRequireTerm(filterParms.isDiscardOnMissingWords() ? MatchingEvalRequest.RequireTerm.yes : MatchingEvalRequest.RequireTerm.onDisjunction);
     List<String> texts = new ArrayList<>(docs.size());
     for (Document doc : docs)
       texts.add(doc.getText());

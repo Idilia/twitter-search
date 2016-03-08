@@ -38,7 +38,7 @@ public class SearchForm implements SearchParameters, FilteringParameters {
   /** Filtering parameters */
 
   private boolean discardInconclusive = false;
-  private boolean rejectOnMissingWords = true;
+  private boolean discardOnMissingWords = true;
 
   
   
@@ -290,12 +290,12 @@ public class SearchForm implements SearchParameters, FilteringParameters {
   }
 
   @Override
-  public boolean isRejectedOnMissingWords() {
-    return rejectOnMissingWords;
+  public boolean isDiscardOnMissingWords() {
+    return discardOnMissingWords;
   }
 
-  public final void setRejectedOnMissingWords(boolean rejectOnMissingWords) {
-    this.rejectOnMissingWords = rejectOnMissingWords;
+  public final void setDiscardOnMissingWords(boolean discardOnMissingWords) {
+    this.discardOnMissingWords = discardOnMissingWords;
   }
 
   

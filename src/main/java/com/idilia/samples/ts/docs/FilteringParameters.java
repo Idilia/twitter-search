@@ -18,5 +18,5 @@ public interface FilteringParameters {
    * Indicates how to handle a document when the words in the document do not
    * include some mandatory terms from the search expression.
    */
-  boolean isRejectedOnMissingWords();
+  boolean isDiscardOnMissingWords();
 }

@@ -151,7 +151,7 @@ public class TwitterHttpAsyncClient implements Closeable {
   CompletableFuture<List<? extends Document>> search(final TwitterSearchToken searchToken, int cnt)
       throws TwitterClientException {
 
-    StringBuilder qrySb = new StringBuilder(256);
+    final StringBuilder qrySb = new StringBuilder(256);
     qrySb.append("https://api.twitter.com/1.1/search/tweets.json");
     if (searchToken.getNextResults() != null)
       qrySb.append(searchToken.getNextResults());

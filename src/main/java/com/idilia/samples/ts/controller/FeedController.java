@@ -98,18 +98,30 @@ public class FeedController {
    * @return a message with the words where the meaning was not used.
    */
   String skStatusToMessage(List<SkModelStatus> sksEvalStatus) {
+    StringBuffer sb = new StringBuffer();
+    
     /* Gather the words where the meaning was not used */
-    List<String> unused = sksEvalStatus.stream().filter(s -> s.getCode() > 0).map(SkModelStatus::getText)
+    List<String> unused = sksEvalStatus.stream().filter(s -> !s.wasUsed()).map(SkModelStatus::getText)
         .collect(Collectors.toList());
 
-    if (unused.isEmpty())
-      return null;
-
     if (unused.size() == 1)
-      return "Meaning-based search is unavailable for \"" + unused.get(0) + "\". Falling back to the word itself.";
-
-    String words = unused.stream().collect(Collectors.joining(", "));
-    return "Meaning-based search is unavailable for \"" + words + "\". Falling back to the words.";
+      sb.append("Meaning-based search is unavailable for \"" + unused.get(0) + "\". Falling back to the word itself.");
+    else if (unused.size() > 1) {
+      sb.append("Meaning-based search is unavailable for \"");
+      sb.append(unused.stream().collect(Collectors.joining(", ")));
+      sb.append("\". Falling back to the words.");
+    }
+    
+    /** 
+     * Where the SkModelStatus::getCode is 4 or 5, the meaning is used but we expect 
+     * little discrimination of results:
+     * <li> 4 - selected meaning is rare and most documents are discarded. Those
+     *     not discarded are mostly inconclusive. That's visible so no message required.
+     * <li> 5 - selected meaning is almost always used. Most documents are kept
+     *     and conclusive and good. No need for a message.
+     */
+    
+    return sb.length() == 0 ? null : sb.toString();
   }
 
   /**

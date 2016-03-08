@@ -55,7 +55,7 @@ public class Search {
   /**
    * Options used when classifying returned documents
    */
-  private FilteringParameters filteringParms;
+  FilteringParameters filteringParms;
 
   /**
    * Keywords entered by the user to conclusively identify a document as
@@ -304,7 +304,7 @@ public class Search {
       if (!toReclass.isEmpty()) {
         try {
           MatchingEvalResponse response = matchSvc
-              .matchAsync(getExpressionSenses(), toReclass, dbSearch.getUser().getId()).join();
+              .matchAsync(getExpressionSenses(), filteringParms, toReclass, dbSearch.getUser().getId()).join();
           List<Double> res = response.getResult();
           for (int i = 0; i < res.size(); ++i) {
             Document d = toReclass.get(i);
@@ -549,7 +549,7 @@ public class Search {
             for (int i = 0; i < docs.size(); ++i)
               if (kwRes.get(i) == 0)
                 forApi.add(docs.get(i).getDoc());
-            return matchSvc.matchAsync(getExpressionSenses(), forApi, dbSearch.getUser().getId());
+            return matchSvc.matchAsync(getExpressionSenses(), filteringParms, forApi, dbSearch.getUser().getId());
 
           }).thenApply((MatchingEvalResponse apiRes) -> {
 

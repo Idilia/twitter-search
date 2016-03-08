@@ -75,6 +75,7 @@ public class SearchTest {
     sParms.setQuery("apple");
     Search search = new Search(user, sParms.getQuery(), docSrc, matchSvc);
     search.setExpressionSenses(Collections.singletonList(new Sense(0,1,"apple", "APPLE/N21")));
+    search.filteringParms = sParms;
     Feed kept = search.getFeed(FeedType.KEPT), disc = search.getFeed(FeedType.DISCARDED);
     kept.add(new FeedDocument(new Tweet(1L, "a in")));
     disc.add(new FeedDocument(new Tweet(2L, "to in")));
@@ -87,7 +88,7 @@ public class SearchTest {
     docs.stream().forEach(d -> assertEquals(FeedDocument.Status.USER_KW_KEPT, d.getStatus()));
     
     // Remove the keyword. Not having the seach term "apple" will cause them to be discarded
-    assertTrue(sParms.isRejectedOnMissingWords());
+    assertTrue(sParms.isDiscardOnMissingWords());
     assertTrue(search.removeKeyword(KeywordType.POSITIVE, "in"));
     assertEquals(2, disc.getNumAvailable());
     assertEquals(0, kept.getNumAvailable());

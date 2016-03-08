@@ -3,6 +3,7 @@ package com.idilia.samples.ts.twitter;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotEquals;
+import static org.junit.Assert.assertNotNull;
 
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
@@ -17,7 +18,6 @@ import com.idilia.samples.ts.config.Beans;
 import com.idilia.samples.ts.controller.SearchForm;
 import com.idilia.samples.ts.docs.Document;
 import com.idilia.samples.ts.docs.DocumentSource;
-import com.idilia.samples.ts.docs.SearchToken;
 
 @RunWith(SpringJUnit4ClassRunner.class)
 @SpringApplicationConfiguration(classes = Beans.class)
@@ -32,12 +32,14 @@ public class TwitterDocumentSourceTest {
   public void testGetNextDocuments() {
     SearchForm sf = new SearchForm();
     sf.setIncludeRetweets(true);
-    sf.setQuery("apple");
-    SearchToken tk = twtSrc.createSearchToken(sf);
+    sf.setQuery("@nytimes");
+    TwitterSearchToken tk = (TwitterSearchToken) twtSrc.createSearchToken(sf);
     
     CompletableFuture<List<? extends Document>> future = twtSrc.getNextDocuments(tk, 1);
     List<? extends Document> tweets = future.join();
+    assertFalse(tk.isFinished());
     assertEquals(1, tweets.size());
+    assertNotNull(tk.getMaxId());
     Tweet twt = (Tweet) tweets.get(0);
     assertFalse(twt.getId().isEmpty());
     assertFalse(twt.getText().isEmpty());
