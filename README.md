@@ -19,6 +19,8 @@ In addition to the above, this application also implements the following best pr
 
 The capabilities are demonstrated in the context of a Twitter search application. The tweets are retrieved using the [Twitter search API](https://dev.twitter.com/rest/public/search).
 
+A live version of this project is running at [https://api.idilia.com/twitter-search/](https://api.idilia.com/twitter-search/).
+
 ## Implementation
 The project is implemented as a [Spring](http://spring.io/) application using JPA. However the Idilia API does not rely on Spring and can be used with other frameworks. The database configured is an in-memory database to facilitate testing.
 

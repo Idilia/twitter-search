@@ -246,7 +246,6 @@ public class SearchController {
         senses.addAll(se.senses);
       AprioriTagger tagger = new AprioriTaggerBuilder(senses).setCaseInsensitive(true)
           .setMatchesPluralNouns(true).build();
-      expr = StringEscapeUtils.escapeXml(expr);
       String tmText = taggingMenuSvc.convertBooleanExp(expr);
       tmText = tagger.tag(tmText);
       tmFtr = taggingMenuSvc.getTaggingMenu(tmText, user.getId());
