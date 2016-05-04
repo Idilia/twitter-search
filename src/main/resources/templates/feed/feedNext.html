@@ -12,7 +12,7 @@
      docs: List<? extends Document> which contains List<Tweet>
      url: String with the request for the next documents
  */-->
- <div th:replace="feed/tweets :: content" />
+ <div th:replace="feed/tweets :: content"></div>
  <a th:if="${url}" class="hidden feed-next" th:href="@{${url}}">Next</a>
 
 </div>

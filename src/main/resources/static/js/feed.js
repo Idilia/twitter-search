@@ -302,7 +302,7 @@ idilia.ts.feed = function() {
     var moved = remKeyword(kwType === 'POSITIVE' ? 'NEGATIVE' : 'POSITIVE', kw);
     $("#feed-containers .tweet").each(function(ndx, tweet) {
       var $tweet = $(tweet);
-      if (re.test($tweet.text())) {
+      if (re.test($tweet.find('.text').text())) {
         var kws = $tweet.data(attrName) || '\t';
         kws = kws + kw + '\t';
         $tweet.data(attrName, kws);

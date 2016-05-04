@@ -439,17 +439,23 @@ public class Search {
         .start()
         .whenComplete(
             (rc, ex) -> {
-              if (ex != null)
-                docRequest.future.completeExceptionally(ex);
+              if (ex != null) {
+                if (!sksStatus.isDone())
+                  sksStatus.completeExceptionally(ex);
+                if (docRequest != null)
+                  docRequest.future.completeExceptionally(ex);
+              }
               else {
                 /*
                  * Job ended normally. Attempt to satisfy a pending user
                  * request. If that's not possible or nothing left, then start
                  * another job.
                  */
-                if ((!docRequest.isDone() && !signalPendingRequest())
-                    || (!searchToken.isFinished() && docRequest.feed.getNumAvailable() < docRequest.minCnt))
-                  startFetchJob();
+                if (docRequest != null) {
+                  if ((!docRequest.isDone() && !signalPendingRequest())
+                      || (!searchToken.isFinished() && docRequest.feed.getNumAvailable() < docRequest.minCnt))
+                    startFetchJob();
+                }
               }
               logger.debug("Finished one fetch job");
             });

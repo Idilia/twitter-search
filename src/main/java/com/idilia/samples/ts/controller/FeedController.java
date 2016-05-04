@@ -98,6 +98,9 @@ public class FeedController {
    * @return a message with the words where the meaning was not used.
    */
   String skStatusToMessage(List<SkModelStatus> sksEvalStatus) {
+    if (sksEvalStatus == null)
+      return null;
+    
     StringBuffer sb = new StringBuffer();
     
     /* Gather the words where the meaning was not used */

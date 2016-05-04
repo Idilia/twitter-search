@@ -47,7 +47,7 @@ public class MatchingEvalService {
     MatchingEvalRequest req = new MatchingEvalRequest();
     req.setExpression(senses);
     req.setCustomerId(customerId);
-    req.setRequireTerm(filterParms.isDiscardOnMissingWords() ? MatchingEvalRequest.RequireTerm.yes : MatchingEvalRequest.RequireTerm.onDisjunction);
+    req.setRequireTerm(filterParms.isDiscardOnMissingWords() ? MatchingEvalRequest.RequireTerm.yes : MatchingEvalRequest.RequireTerm.onDisjunctionOnly);
     List<String> texts = new ArrayList<>(docs.size());
     for (Document doc : docs)
       texts.add(doc.getText());

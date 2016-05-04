@@ -20,7 +20,7 @@
 
     <!--/* Status icon: kept or discarded */-->
     <div class="pull-right">
-     <span class="status-icon glyphicon ts-popup"/>
+     <span class="status-icon glyphicon ts-popup"></span>
     </div>
 
     <div class="content">
@@ -31,7 +31,7 @@
        target="_blank"> <img class="avatar"
        th:src="${tweet.getProfileImgUrl()}"></img> <strong
        class="fullname" th:text="${tweet.getName()}"></strong> <span
-       class="username" th:text="${tweet.getScreenName()}"></span> <span
+       class="username">@<span th:text="${tweet.getScreenName()}"></span></span> <span
        class="time"
        th:text="${T(com.idilia.samples.ts.twitter.TweetFormatter).renderDate(tweet)}"></span>
       </a>

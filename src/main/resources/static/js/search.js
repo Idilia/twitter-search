@@ -72,17 +72,25 @@ idilia.ts.search = function() {
   };
 
   /**
+   * Clear the sense area and tell listeners to remove feeds
+   */
+  var clearForNewRequest = function() {
+    /* Ensure that we don't have anything showing in the sense results */
+    $("#query-senses").hide();
+
+    /* Inform listeners */
+    $(document).trigger("newExpr");
+  };
+  
+  /**
    * Handler when clicking into the query search box Resets to a state for a new
    * search.
    */
   var queryEntryEH = function(event) {
-    /* Ensure that we don't have anything showing in the sense results */
-    $("#query-senses").hide();
+    clearForNewRequest();
 
     /* The primary action becomes the search icon */
     $("#search-button").removeClass("btn-default").addClass("btn-primary");
-
-    $(document).trigger("newExpr");
   };
   
   /**
@@ -191,6 +199,8 @@ idilia.ts.search = function() {
   var newExprEH = function(event) {
     event.preventDefault();
 
+    clearForNewRequest();
+    
     var $form = $("#search-form");
     var formData = $form.serialize();
     $("html").addClass("busy");
